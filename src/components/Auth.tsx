@@ -1,11 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Account } from "../types";
 import { useI18n } from "../i18n";
+import { UNIVERSITIES, collegesOf, findCollege, yearOptions } from "../data/hierarchy";
 import EcgLine from "./EcgLine";
 import { KiurWordmark, LangSwitch } from "./ui";
-import { ClipboardIcon, GradCapIcon, HeartPulseIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
-
-const COLLEGES = ["col_medicine", "col_dentistry", "col_pharmacy", "col_nursing", "col_ams", "col_vet"];
+import { ClipboardIcon, CrownIcon, GradCapIcon, HeartPulseIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
 
 interface AuthProps {
   accounts: Account[];
@@ -15,13 +14,18 @@ interface AuthProps {
 }
 
 export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps) {
-  const { t } = useI18n();
+  const { t, bi } = useI18n();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [college, setCollege] = useState(COLLEGES[0]);
+  /* التسلسل الأكاديمي: جامعة ← كلية ← قسم ← مرحلة */
+  const [university, setUniversity] = useState("");
+  const [college, setCollege] = useState("");
+  const [department, setDepartment] = useState("");
   const [year, setYear] = useState("1");
+  const uniColleges = collegesOf(university);
+  const curCollege = findCollege(college);
   const [error, setError] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
 
@@ -45,7 +49,7 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
       const err = onLogin(email.trim().toLowerCase(), password);
       if (err) fail(t(err));
     } else {
-      if (!name.trim() || !email.trim() || password.length < 4) {
+      if (!name.trim() || !email.trim() || password.length < 4 || !university || !college) {
         fail(t("required_fields"));
         return;
       }
@@ -54,7 +58,9 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
         email: email.trim().toLowerCase(),
         password,
         role: "student",
+        university,
         college,
+        department: department || undefined,
         year,
         createdAt: Date.now(),
       });
@@ -180,19 +186,61 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
               </div>
 
               {mode === "register" && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="anim-fade-up grid grid-cols-2 gap-3">
                   <div>
-                    <label className="lbl">{t("college")}</label>
-                    <select className="input" value={college} onChange={(e) => setCollege(e.target.value)}>
-                      {COLLEGES.map((c) => (
-                        <option key={c} value={c}>{t(c)}</option>
+                    <label className="lbl">{t("university_col")} ★</label>
+                    <select
+                      className="input"
+                      value={university}
+                      onChange={(e) => {
+                        setUniversity(e.target.value);
+                        setCollege("");
+                        setDepartment("");
+                        setYear("1");
+                      }}
+                    >
+                      <option value="">{t("select_hint")}</option>
+                      {UNIVERSITIES.map((u) => (
+                        <option key={u.id} value={u.id}>{bi(u.name)}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="lbl">{t("year_level")}</label>
-                    <select className="input" value={year} onChange={(e) => setYear(e.target.value)}>
-                      {["1", "2", "3", "4", "5", "6"].map((y) => (
+                    <label className="lbl">{t("college")} ★</label>
+                    <select
+                      className="input"
+                      value={college}
+                      disabled={!university}
+                      onChange={(e) => {
+                        setCollege(e.target.value);
+                        setDepartment("");
+                        setYear("1");
+                      }}
+                    >
+                      <option value="">{t("select_hint")}</option>
+                      {uniColleges.map((c) => (
+                        <option key={c.id} value={c.id}>{bi(c.name)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">{t("department_col")}</label>
+                    <select
+                      className="input"
+                      value={department}
+                      disabled={!college}
+                      onChange={(e) => setDepartment(e.target.value)}
+                    >
+                      <option value="">{t("general_dept")}</option>
+                      {(curCollege?.depts ?? []).map((d) => (
+                        <option key={d.id} value={d.id}>{bi(d.name)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">{t("level_col")} ★</label>
+                    <select className="input" value={year} disabled={!college} onChange={(e) => setYear(e.target.value)}>
+                      {yearOptions(college).map((y) => (
                         <option key={y} value={y}>{y}</option>
                       ))}
                     </select>
@@ -217,13 +265,22 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 <HeartPulseIcon size={14} />
                 {t("demo_accounts")}
               </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <button
+                  onClick={() => fill("owner@kiur.edu", "kiur2024")}
+                  className="rounded-lg border border-amberx-500/40 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-amberx-500 hover:bg-pine-700"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-amberx-500">
+                    <CrownIcon size={13} /> {t("owner_role")}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">owner@kiur.edu / kiur2024</span>
+                </button>
                 <button
                   onClick={() => fill("admin@kiur.edu", "kiur2024")}
                   className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
                 >
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-amberx-500">
-                    <ShieldIcon size={13} /> {t("admin_account")}
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
+                    <ShieldIcon size={13} /> {t("admin_role")}
                   </span>
                   <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">admin@kiur.edu / kiur2024</span>
                 </button>

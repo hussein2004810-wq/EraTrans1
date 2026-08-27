@@ -92,6 +92,57 @@ const STR: Record<string, BiText> = {
   sec_exits: { ar: "مغادرات", en: "Leaves" },
   local_data_note: { ar: "البيانات تُحفظ محليًا على كل جهاز (نسخة تجريبية) — اربط Supabase للمزامنة الفعلية بين الأجهزة.", en: "Data is stored locally per device (demo build) — connect Supabase for real cross-device sync." },
 
+  // ── التسلسل الأكاديمي ──
+  university_col: { ar: "الجامعة", en: "University" },
+  department_col: { ar: "القسم", en: "Department" },
+  level_col: { ar: "المرحلة", en: "Level" },
+  select_hint: { ar: "— اختر —", en: "— Select —" },
+  general_dept: { ar: "عام (بلا قسم)", en: "General (no department)" },
+
+  // ── البحث ──
+  search_exams: { ar: "ابحث عن اختبار أو مقرر...", en: "Search exams or subjects..." },
+  search_students: { ar: "ابحث بالاسم أو البريد أو الكلية...", en: "Search by name, email or college..." },
+  no_match: { ar: "لا نتائج مطابقة لبحثك", en: "No results match your search" },
+  level_word: { ar: "المرحلة", en: "Level" },
+
+  // ── هرمية المشرفين ──
+  admins_tab: { ar: "المشرفون والصلاحيات", en: "Admins & Permissions" },
+  owner_role: { ar: "مالك المنصة", en: "Platform Owner" },
+  admin_role: { ar: "مشرف", en: "Admin" },
+  new_admin: { ar: "إنشاء مشرف جديد", en: "Create new admin" },
+  promote_student: { ar: "ترقية طالب إلى مشرف", en: "Promote student to admin" },
+  perm_exams: { ar: "إدارة الاختبارات", en: "Manage exams" },
+  perm_questions: { ar: "بنك الأسئلة", en: "Question bank" },
+  perm_images: { ar: "مكتبة الصور", en: "Image library" },
+  perm_import: { ar: "استيراد الأسئلة", en: "Import questions" },
+  perm_students: { ar: "سجل الطلاب", en: "Students registry" },
+  perm_reports: { ar: "التقارير", en: "Reports" },
+  perm_export: { ar: "تصدير الدرجات", en: "Export grades" },
+  perm_audit: { ar: "رؤية سجل التدقيق", en: "View audit log" },
+  demote: { ar: "إلغاء الإشراف", en: "Revoke admin" },
+  owner_only: { ar: "هذه الصلاحية لمالك المنصة فقط", en: "Owner-only capability" },
+  admin_created: { ar: "تم إنشاء المشرف ✓", en: "Admin created ✓" },
+  owner_untouchable: { ar: "حساب المالك لا يمكن تعديله", en: "The owner account cannot be modified" },
+
+  // ── سجل التدقيق ──
+  audit_tab: { ar: "سجل التدقيق", en: "Audit Log" },
+  audit_hint: { ar: "كل إضافة وتعديل وحذف موثّق هنا باسم فاعله ووقته — حصري لمالك المنصة ولمن يمنحه صلاحية الرؤية.", en: "Every add, edit and delete is documented here with actor and time — exclusive to the platform owner and those he grants." },
+  act_create: { ar: "أضاف", en: "Created" },
+  act_update: { ar: "عدّل", en: "Updated" },
+  act_delete: { ar: "حذف", en: "Deleted" },
+  act_import: { ar: "استورد", en: "Imported" },
+  act_grant: { ar: "منح صلاحية", en: "Granted" },
+  tgt_exam: { ar: "اختبار", en: "Exam" },
+  tgt_question: { ar: "سؤال", en: "Question" },
+  tgt_admin: { ar: "مشرف", en: "Admin" },
+  tgt_student: { ar: "طالب", en: "Student" },
+  actor_col: { ar: "الفاعل", en: "Actor" },
+  action_col: { ar: "الإجراء", en: "Action" },
+  target_col: { ar: "العنصر", en: "Target" },
+  time_col: { ar: "الوقت", en: "Time" },
+  audit_empty: { ar: "لا قيود مسجلة بعد", en: "No entries recorded yet" },
+  details: { ar: "تفاصيل", en: "Details" },
+
   // ── إحصاءات ──
   attempts_n: { ar: "المحاولات", en: "Attempts" },
   avg_score: { ar: "متوسط الدقة", en: "Average Score" },

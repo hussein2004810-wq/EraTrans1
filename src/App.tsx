@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
-  Account, Attempt, ExamDef, ExamResult, Lang, Question, SavedSession,
+  Account, Attempt, AuditEntry, ExamDef, ExamResult, Lang, Question, SavedSession,
 } from "./types";
 import {
   ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED,
@@ -40,6 +40,7 @@ export default function App() {
   const [accounts, setAccounts] = useState<Account[]>(() => initOnce(KEYS.accounts, ACCOUNTS_SEED));
   const [attempts, setAttempts] = useState<Attempt[]>(() => initOnce(KEYS.attempts, ATTEMPTS_SEED));
   const [sessions, setSessions] = useState<SavedSession[]>(() => load(KEYS.sessions, [] as SavedSession[]));
+  const [audit, setAudit] = useState<AuditEntry[]>(() => load(KEYS.audit, [] as AuditEntry[]));
   const [user, setUser] = useState<Account | null>(() => {
     const email = load<string | null>(KEYS.user, null);
     if (!email) return null;
@@ -51,6 +52,31 @@ export default function App() {
   useEffect(() => { save(KEYS.accounts, accounts); }, [accounts]);
   useEffect(() => { save(KEYS.attempts, attempts); }, [attempts]);
   useEffect(() => { save(KEYS.sessions, sessions); }, [sessions]);
+  useEffect(() => { save(KEYS.audit, audit); }, [audit]);
+
+  /* ── سجل التدقيق: من أضاف وعدّل وحذف ── */
+  const logAudit = useCallback(
+    (action: AuditEntry["action"], target: AuditEntry["target"], title: string, details?: string) => {
+      if (!user) return;
+      setAudit((prev) =>
+        [
+          {
+            id: uid("au-"),
+            date: Date.now(),
+            actorEmail: user.email,
+            actorName: user.name,
+            actorRole: user.role,
+            action,
+            target,
+            title,
+            details,
+          },
+          ...prev,
+        ].slice(0, 400)
+      );
+    },
+    [user]
+  );
 
   /* ── الشاشات ── */
   const [screen, setScreen] = useState<Screen>(user ? "home" : "auth");
@@ -191,20 +217,61 @@ export default function App() {
   };
 
   /* ── إدارة ── */
-  const saveExam = (e: ExamDef) =>
+  const saveExam = (e: ExamDef) => {
+    const isNew = !exams.some((x) => x.id === e.id);
     setExams((prev) => (prev.some((x) => x.id === e.id) ? prev.map((x) => (x.id === e.id ? e : x)) : [e, ...prev]));
+    logAudit(isNew ? "create" : "update", "exam", e.title.ar || e.title.en,
+      `${e.count} ${e.questionIds.length ? "(manual)" : ""} · pass ${e.passPercent}٪`);
+  };
   const deleteExam = (id: string) => {
+    const gone = exams.find((e) => e.id === id);
     setExams((prev) => prev.filter((e) => e.id !== id));
     setSessions((prev) => prev.filter((s) => s.examId !== id));
+    if (gone) logAudit("delete", "exam", gone.title.ar || gone.title.en);
   };
-  const saveQuestion = (q: Question) =>
+  const saveQuestion = (q: Question) => {
+    const isNew = !questions.some((x) => x.id === q.id);
     setQuestions((prev) => (prev.some((x) => x.id === q.id) ? prev.map((x) => (x.id === q.id ? q : x)) : [q, ...prev]));
-  const deleteQuestion = (id: string) => setQuestions((prev) => prev.filter((q) => q.id !== id));
-  const importQuestions = (qs: Question[]) => setQuestions((prev) => [...qs, ...prev]);
+    logAudit(isNew ? "create" : "update", "question", q.text.ar || q.text.en, q.type);
+  };
+  const deleteQuestion = (id: string) => {
+    const gone = questions.find((x) => x.id === id);
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+    if (gone) logAudit("delete", "question", gone.text.ar || gone.text.en);
+  };
+  const importQuestions = (qs: Question[]) => {
+    setQuestions((prev) => [...qs, ...prev]);
+    logAudit("import", "question", `${qs.length} × MCQ`, qs[0]?.text.ar ?? "");
+  };
   const deleteStudent = (email: string) => {
+    const gone = accounts.find((a) => a.email === email);
     setAccounts((prev) => prev.filter((a) => a.email !== email));
     setAttempts((prev) => prev.filter((a) => a.studentEmail !== email));
     setSessions((prev) => prev.filter((s) => s.studentEmail !== email));
+    if (gone) logAudit("delete", "student", gone.name, email);
+  };
+
+  /* ── إدارة المشرفين (المالك فقط) ── */
+  const saveAdmin = (acc: Account) => {
+    const isNew = !accounts.some((a) => a.email === acc.email);
+    setAccounts((prev) =>
+      prev.some((a) => a.email === acc.email)
+        ? prev.map((a) => (a.email === acc.email ? acc : a))
+        : [...prev, acc]
+    );
+    logAudit(isNew ? "create" : "grant", "admin", acc.name, (acc.perms ?? []).join(", ") || "—");
+  };
+  const deleteAdmin = (email: string) => {
+    const gone = accounts.find((a) => a.email === email);
+    setAccounts((prev) => prev.filter((a) => a.email !== email));
+    if (gone) logAudit("delete", "admin", gone.name, email);
+  };
+  const demoteAdmin = (email: string) => {
+    const gone = accounts.find((a) => a.email === email);
+    setAccounts((prev) =>
+      prev.map((a) => (a.email === email ? { ...a, role: "student" as const, perms: undefined } : a))
+    );
+    if (gone) logAudit("update", "admin", gone.name, "demote → student");
   };
 
   const authStats = useMemo(
@@ -253,7 +320,7 @@ export default function App() {
         onHome={() => setScreen("home")}
       />
     );
-  } else if (user.role === "admin") {
+  } else if (user.role === "admin" || user.role === "owner") {
     view = (
       <AdminDashboard
         user={user}
@@ -261,12 +328,16 @@ export default function App() {
         exams={exams}
         attempts={attempts}
         accounts={accounts}
+        audit={audit}
         onSaveExam={saveExam}
         onDeleteExam={deleteExam}
         onSaveQuestion={saveQuestion}
         onDeleteQuestion={deleteQuestion}
         onImportQuestions={importQuestions}
         onDeleteStudent={deleteStudent}
+        onSaveAdmin={saveAdmin}
+        onDeleteAdmin={deleteAdmin}
+        onDemoteAdmin={demoteAdmin}
         onLogout={logout}
       />
     );

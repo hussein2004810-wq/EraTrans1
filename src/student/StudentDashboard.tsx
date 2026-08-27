@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, ExamDef, Question, SavedSession } from "../types";
+import type { Account, Attempt, ExamDef, Question, SavedSession, SubjectId } from "../types";
 import { useI18n } from "../i18n";
-import { CLINICAL_TIPS, SUBJECTS } from "../data/seed";
+import { CLINICAL_TIPS, SUBJECTS, subjectById } from "../data/seed";
+import { findCollege, findDept, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
 import { EmptyState, KiurWordmark, LangSwitch, SubjectTag, TypeBadge, formatDate } from "../components/ui";
 import { AttemptReviewModal } from "../exam/ExamResults";
 import {
   AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, ClockIcon, EyeIcon,
-  GradCapIcon, HeartPulseIcon, LayersIcon, LogoutIcon, SaveIcon, StethoIcon, TargetIcon, XIcon,
+  GradCapIcon, HeartPulseIcon, LayersIcon, LogoutIcon, SaveIcon, SearchIcon, StethoIcon, TargetIcon, XIcon,
 } from "../components/icons";
 
 export function effectiveCount(exam: ExamDef, bank: Question[]): number {
@@ -37,6 +38,9 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
   const { t, bi, lang } = useI18n();
   const [reviewAttempt, setReviewAttempt] = useState<Attempt | null>(null);
   const [tipIdx] = useState(() => Math.floor(Math.random() * CLINICAL_TIPS.length));
+  /* بحث الطالب عن الاختبارات والمقررات */
+  const [q, setQ] = useState("");
+  const [fSub, setFSub] = useState<"all" | SubjectId>("all");
 
   const mine = useMemo(
     () => attempts.filter((a) => a.studentEmail === user.email).sort((a, b) => b.date - a.date),
@@ -88,8 +92,16 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                 {greeting}،
               </p>
               <h1 className="font-display text-3xl font-bold sm:text-4xl">{user.name}</h1>
-              <p className="mt-1 text-xs text-pulse-300/70">
-                {user.college ? t(user.college) : ""} · {t("year_level")} {user.year}
+              <p className="mt-1 text-xs leading-relaxed text-pulse-300/70">
+                {[
+                  findUniversity(user.university)?.name,
+                  findCollege(user.college)?.name,
+                  findDept(user.college, user.department)?.name,
+                ]
+                  .filter(Boolean)
+                  .map((n) => bi(n!))
+                  .join(" · ")}
+                {user.year && <> · {t("level_word")} {user.year}</>}
               </p>
 
               <div className="mt-5 grid max-w-md grid-cols-4 gap-2.5">
@@ -145,8 +157,66 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
           {published.length === 0 ? (
             <EmptyState icon={<ClipboardIcon size={22} />} text={t("no_published")} />
           ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="relative min-w-56 flex-1">
+                  <SearchIcon size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-soft/60" />
+                  <input
+                    className="input ps-9"
+                    placeholder={t("search_exams")}
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setFSub("all")}
+                    className={
+                      "rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 " +
+                      (fSub === "all" ? "bg-pine-900 text-pulse-300 shadow-md" : "bg-white text-ink-soft border border-line hover:border-pulse-500")
+                    }
+                  >
+                    {t("all")}
+                  </button>
+                  {SUBJECTS.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setFSub(fSub === s.id ? "all" : s.id)}
+                      className={
+                        "rounded-full px-3 py-1.5 text-xs font-bold transition-all duration-200 " +
+                        (fSub === s.id ? "text-white shadow-md" : "bg-white text-ink-soft border border-line hover:border-pulse-500")
+                      }
+                      style={fSub === s.id ? { backgroundColor: s.color } : undefined}
+                    >
+                      {bi(s.name)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const text = q.trim().toLowerCase();
+                const visible = published.filter((exam) => {
+                  const matchSub =
+                    fSub === "all" || exam.subjectIds.includes(fSub) || exam.subjectIds.length === 0;
+                  const matchQ =
+                    !text ||
+                    bi(exam.title).toLowerCase().includes(text) ||
+                    bi(exam.description).toLowerCase().includes(text) ||
+                    exam.subjectIds.some((s) => {
+                      const sub = subjectById(s);
+                      return (
+                        !!sub &&
+                        (sub.name.ar.includes(q.trim()) || sub.name.en.toLowerCase().includes(text))
+                      );
+                    });
+                  return matchSub && matchQ;
+                });
+                if (visible.length === 0)
+                  return <EmptyState icon={<SearchIcon size={22} />} text={t("no_match")} />;
+                return (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {published.map((exam, i) => {
+              {visible.map((exam, i) => {
                 const n = effectiveCount(exam, questions);
                 const disabled = n === 0;
                 return (
@@ -210,6 +280,9 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                 );
               })}
             </div>
+                );
+              })()}
+            </>
           )}
         </section>
 

@@ -1,19 +1,24 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, ExamDef, Question, SavedSession } from "../types";
+import type { Account, Attempt, AuditEntry, ExamDef, PermKey, Question, SavedSession } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
+import { findCollege, findDept, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
 import { EmptyState, KiurWordmark, LangSwitch, Modal, formatDate } from "../components/ui";
 import QuestionBank, { ImportPanel } from "./QuestionBank";
 import ExamBuilder from "./ExamBuilder";
 import ImageLibrary from "./ImageLibrary";
 import ExportCenter from "./ExportCenter";
+import AdminsPanel from "./AdminsPanel";
+import AuditLog from "./AuditLog";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, DownloadIcon, EyeIcon, ImageIcon, InfoIcon, LayersIcon,
-  LogoutIcon, PlusIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, ImageIcon, InfoIcon, LayersIcon,
+  LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
-type Tab = "overview" | "exams" | "questions" | "images" | "import" | "students" | "reports" | "export";
+type Tab =
+  | "overview" | "exams" | "questions" | "images" | "import"
+  | "students" | "reports" | "export" | "audit" | "admins";
 
 interface Props {
   user: Account;
@@ -21,40 +26,60 @@ interface Props {
   exams: ExamDef[];
   attempts: Attempt[];
   accounts: Account[];
+  audit: AuditEntry[];
   onSaveExam: (e: ExamDef) => void;
   onDeleteExam: (id: string) => void;
   onSaveQuestion: (q: Question) => void;
   onDeleteQuestion: (id: string) => void;
   onImportQuestions: (qs: Question[]) => void;
   onDeleteStudent: (email: string) => void;
+  onSaveAdmin: (acc: Account) => void;
+  onDeleteAdmin: (email: string) => void;
+  onDemoteAdmin: (email: string) => void;
   onLogout: () => void;
 }
 
 export default function AdminDashboard(props: Props) {
-  const { user, questions, exams, attempts, accounts, onLogout } = props;
+  const { user, questions, exams, attempts, accounts, audit, onLogout } = props;
   const { t, bi, lang } = useI18n();
   const [tab, setTab] = useState<Tab>("overview");
   const [presetImage, setPresetImage] = useState<string | null>(null);
 
+  const isOwner = user.role === "owner";
+  const has = (p: PermKey) => isOwner || (user.perms ?? []).includes(p);
+
   const students = accounts.filter((a) => a.role === "student");
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview", label: t("overview"), icon: <ChartIcon size={16} /> },
-    { id: "exams", label: t("exams_tab"), icon: <ClipboardIcon size={16} /> },
-    { id: "questions", label: t("question_bank"), icon: <LayersIcon size={16} /> },
-    { id: "images", label: t("images_tab"), icon: <ImageIcon size={16} /> },
-    { id: "import", label: t("import_tab"), icon: <UploadIcon size={16} /> },
-    { id: "students", label: t("students_tab"), icon: <UsersIcon size={16} /> },
-    { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} /> },
-    { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} /> },
+  const allTabs: { id: Tab; label: string; icon: React.ReactNode; show: boolean }[] = [
+    { id: "overview", label: t("overview"), icon: <ChartIcon size={16} />, show: true },
+    { id: "exams", label: t("exams_tab"), icon: <ClipboardIcon size={16} />, show: has("exams") },
+    { id: "questions", label: t("question_bank"), icon: <LayersIcon size={16} />, show: has("questions") },
+    { id: "images", label: t("images_tab"), icon: <ImageIcon size={16} />, show: has("images") },
+    { id: "import", label: t("import_tab"), icon: <UploadIcon size={16} />, show: has("import") },
+    { id: "students", label: t("students_tab"), icon: <UsersIcon size={16} />, show: has("students") },
+    { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} />, show: has("reports") },
+    { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} />, show: has("export") },
+    { id: "audit", label: t("audit_tab"), icon: <EyeIcon size={16} />, show: has("audit") },
+    { id: "admins", label: t("admins_tab"), icon: <CrownIcon size={16} />, show: isOwner },
   ];
+  const tabs = allTabs.filter((x) => x.show);
+  /* إن فُقدت صلاحية التبويب الحالي ارجع للنظرة العامة */
+  const activeTab: Tab = tabs.some((x) => x.id === tab) ? tab : "overview";
 
   return (
     <div className="min-h-screen">
       <header className="monitor-band sticky top-0 z-40 border-b border-pine-700 text-paper shadow-lg shadow-pine-950/20">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
           <KiurWordmark dark size="sm" />
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amberx-500/40 bg-amberx-500/10 px-2.5 py-1 text-[11px] font-bold text-amberx-500">
-            <ShieldIcon size={12} /> {t("admin_portal")}
+          <span
+            className={
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold " +
+              (isOwner
+                ? "border-amberx-500/50 bg-amberx-500/15 text-amberx-500"
+                : "border-pulse-500/40 bg-pulse-500/10 text-pulse-300")
+            }
+          >
+            {isOwner ? <CrownIcon size={12} /> : <ShieldIcon size={12} />}
+            {isOwner ? t("owner_role") : t("admin_role")}
           </span>
           <span className="hidden text-xs text-pulse-300/70 sm:inline">{user.name}</span>
           <span className="ms-auto flex items-center gap-2">
@@ -94,8 +119,8 @@ export default function AdminDashboard(props: Props) {
         </nav>
 
         <div className="min-w-0">
-          {tab === "overview" && <Overview students={students} questions={questions} exams={exams} attempts={attempts} />}
-          {tab === "exams" && (
+          {activeTab === "overview" && <Overview students={students} questions={questions} exams={exams} attempts={attempts} />}
+          {activeTab === "exams" && (
             <ExamBuilder
               exams={exams}
               questions={questions}
@@ -104,7 +129,7 @@ export default function AdminDashboard(props: Props) {
               onDelete={props.onDeleteExam}
             />
           )}
-          {tab === "questions" && (
+          {activeTab === "questions" && (
             <QuestionBank
               questions={questions}
               onSave={props.onSaveQuestion}
@@ -113,7 +138,7 @@ export default function AdminDashboard(props: Props) {
               onPresetConsumed={() => setPresetImage(null)}
             />
           )}
-          {tab === "images" && (
+          {activeTab === "images" && (
             <ImageLibrary
               onUseInQuestion={(url) => {
                 setPresetImage(url);
@@ -121,12 +146,21 @@ export default function AdminDashboard(props: Props) {
               }}
             />
           )}
-          {tab === "import" && <ImportPanel questions={questions} onImport={props.onImportQuestions} />}
-          {tab === "students" && (
+          {activeTab === "import" && <ImportPanel questions={questions} onImport={props.onImportQuestions} />}
+          {activeTab === "students" && (
             <StudentsRegistry students={students} attempts={attempts} onDelete={props.onDeleteStudent} />
           )}
-          {tab === "reports" && <Reports exams={exams} attempts={attempts} />}
-          {tab === "export" && <ExportCenter exams={exams} attempts={attempts} />}
+          {activeTab === "reports" && <Reports exams={exams} attempts={attempts} />}
+          {activeTab === "export" && <ExportCenter exams={exams} attempts={attempts} />}
+          {activeTab === "audit" && <AuditLog entries={audit} />}
+          {activeTab === "admins" && isOwner && (
+            <AdminsPanel
+              accounts={accounts}
+              onSaveAdmin={props.onSaveAdmin}
+              onDeleteAdmin={props.onDeleteAdmin}
+              onDemoteAdmin={props.onDemoteAdmin}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -272,6 +306,23 @@ function StudentsRegistry({
   const { t, bi, lang } = useI18n();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<Account | null>(null);
+  const [q, setQ] = useState("");
+
+  const visible = students.filter((s) => {
+    const text = q.trim().toLowerCase();
+    if (!text) return true;
+    const hay = [
+      s.name,
+      s.email,
+      bi(findUniversity(s.university)?.name ?? { ar: "", en: "" }),
+      bi(findCollege(s.college)?.name ?? { ar: "", en: "" }),
+      bi(findDept(s.college, s.department)?.name ?? { ar: "", en: "" }),
+      s.year ?? "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(text);
+  });
 
   return (
     <div className="card overflow-hidden">
@@ -289,8 +340,17 @@ function StudentsRegistry({
         <p>{t("local_data_note")}</p>
       </div>
 
+      <div className="border-b border-line bg-paper/40 px-6 py-3">
+        <div className="relative max-w-md">
+          <SearchIcon size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-soft/60" />
+          <input className="input ps-9" placeholder={t("search_students")} value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+      </div>
+
       {students.length === 0 ? (
         <div className="p-6"><EmptyState icon={<UsersIcon size={22} />} text={t("no_students")} /></div>
+      ) : visible.length === 0 ? (
+        <div className="p-6"><EmptyState icon={<SearchIcon size={22} />} text={t("no_match")} /></div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -298,8 +358,10 @@ function StudentsRegistry({
               <tr className="bg-paper/70 text-xs text-ink-soft">
                 <th className="px-6 py-3 text-start font-bold">{t("name_col")}</th>
                 <th className="px-3 py-3 text-start font-bold">{t("email_col")}</th>
+                <th className="px-3 py-3 text-start font-bold">{t("university_col")}</th>
                 <th className="px-3 py-3 text-start font-bold">{t("college_col")}</th>
-                <th className="px-3 py-3 text-start font-bold">{t("year_col")}</th>
+                <th className="px-3 py-3 text-start font-bold">{t("department_col")}</th>
+                <th className="px-3 py-3 text-start font-bold">{t("level_col")}</th>
                 <th className="px-3 py-3 text-start font-bold">{t("attempts_n")}</th>
                 <th className="px-3 py-3 text-start font-bold">{t("avg_col")}</th>
                 <th className="px-3 py-3 text-start font-bold">{t("registered_col")}</th>
@@ -307,7 +369,7 @@ function StudentsRegistry({
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => {
+              {visible.map((s) => {
                 const atts = attempts.filter((a) => a.studentEmail === s.email).sort((a, b) => b.date - a.date);
                 const avg = atts.length ? Math.round(atts.reduce((x, a) => x + a.percent, 0) / atts.length) : 0;
                 const open = expanded === s.email;
@@ -316,7 +378,9 @@ function StudentsRegistry({
                     <tr className={"border-t border-line transition-colors " + (open ? "bg-pulse-100/40" : "hover:bg-pulse-100/30")}>
                       <td className="px-6 py-3 font-semibold">{s.name}</td>
                       <td className="px-3 py-3 text-xs" dir="ltr">{s.email}</td>
-                      <td className="px-3 py-3 text-xs">{s.college ? t(s.college) : "—"}</td>
+                      <td className="px-3 py-3 text-xs">{bi(findUniversity(s.university)?.name ?? { ar: "—", en: "—" })}</td>
+                      <td className="px-3 py-3 text-xs">{bi(findCollege(s.college)?.name ?? { ar: "—", en: "—" })}</td>
+                      <td className="px-3 py-3 text-xs">{bi(findDept(s.college, s.department)?.name ?? { ar: "—", en: "—" })}</td>
                       <td className="px-3 py-3 text-xs">{s.year ?? "—"}</td>
                       <td className="px-3 py-3 font-bold tabular-nums">{atts.length}</td>
                       <td className="px-3 py-3">
@@ -345,7 +409,7 @@ function StudentsRegistry({
                     </tr>
                     {open && (
                       <tr className="border-t border-dashed border-line bg-paper/60">
-                        <td colSpan={8} className="px-6 py-4">
+                        <td colSpan={10} className="px-6 py-4">
                           {atts.length === 0 ? (
                             <p className="text-xs text-ink-soft">{t("no_attempts_yet")}</p>
                           ) : (

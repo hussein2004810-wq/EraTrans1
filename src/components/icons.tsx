@@ -136,6 +136,9 @@ export const InfoIcon = (p: P) => (
 export const ShareIcon = (p: P) => (
   <svg {...base(p)}><circle cx="6" cy="12" r="2.5" /><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.2 10.8l7-4M8.2 13.2l7 4" /></svg>
 );
+export const CrownIcon = (p: P) => (
+  <svg {...base(p)}><path d="M3 17l1.5-9L9 12l3-7 3 7 4.5-4L21 17H3z" /><path d="M3 20.5h18" /></svg>
+);
 export const HeartPulseIcon = (p: P) => (
   <svg {...base(p)}><path d="M12 20.5S3 14.5 3 8.8A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 9 2.8c0 5.7-9 11.7-9 11.7z" /><path d="M5.5 12h3l1.5-2.5 2 4 1.5-2.5h4" /></svg>
 );

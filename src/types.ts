@@ -78,14 +78,48 @@ export interface ExamDef {
   createdAt: number;
 }
 
+export type Role = "student" | "admin" | "owner";
+
+/** صلاحيات إشرافية قابلة للتمنح من مالك المنصة */
+export type PermKey =
+  | "exams"
+  | "questions"
+  | "images"
+  | "import"
+  | "students"
+  | "reports"
+  | "export"
+  | "audit";
+
+export const ALL_PERMS: PermKey[] = [
+  "exams", "questions", "images", "import", "students", "reports", "export", "audit",
+];
+
 export interface Account {
   name: string;
   email: string;
   password: string;
-  role: "student" | "admin";
+  role: Role;
+  university?: string;
   college?: string;
+  department?: string;
   year?: string;
+  /** صلاحيات المشرف (المالك يملك كل شيء ضمناً) */
+  perms?: PermKey[];
   createdAt: number;
+}
+
+/** قيد في سجل التدقيق — يراه مالك المنصة (ومن مُنح صلاحية audit) */
+export interface AuditEntry {
+  id: string;
+  date: number;
+  actorEmail: string;
+  actorName: string;
+  actorRole: Role;
+  action: "create" | "update" | "delete" | "import" | "grant";
+  target: "exam" | "question" | "admin" | "student";
+  title: string;
+  details?: string;
 }
 
 /** جلسة اختبار محفوظة (استكمال لاحقًا) */

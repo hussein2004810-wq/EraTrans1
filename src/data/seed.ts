@@ -427,11 +427,22 @@ export const EXAMS_SEED: ExamDef[] = [
 
 /* ───────────────── الحسابات والمحاولات التجريبية ───────────────── */
 
+/** مالك المنصة — يملك كل الصلاحيات ويرقّي المشرفين */
+export const OWNER_SEED: Account = {
+  name: "د. كريم العبيدي",
+  email: "owner@kiur.edu",
+  password: "kiur2024",
+  role: "owner",
+  createdAt: Date.now() - 86400000 * 30,
+};
+
+/** مشرف مُرقّى من مالك المنصة — بصلاحيات ممنوحة */
 export const ADMIN_SEED: Account = {
   name: "د. خالد المنصور",
   email: "admin@kiur.edu",
   password: "kiur2024",
   role: "admin",
+  perms: ["exams", "questions", "images", "import", "students", "reports", "export"],
   createdAt: Date.now() - 86400000 * 10,
 };
 
@@ -442,7 +453,9 @@ export const ACCOUNTS_SEED: Account[] = [
     email: "student@kiur.edu",
     password: "123456",
     role: "student",
-    college: "col_medicine",
+    university: "baghdad",
+    college: "medicine",
+    department: "intmed",
     year: "3",
     createdAt: Date.now() - 86400000 * 6,
   },
@@ -451,7 +464,9 @@ export const ACCOUNTS_SEED: Account[] = [
     email: "sarah@kiur.edu",
     password: "123456",
     role: "student",
-    college: "col_pharmacy",
+    university: "basrah",
+    college: "pharmacy",
+    department: "clinph",
     year: "2",
     createdAt: Date.now() - 86400000 * 5,
   },
@@ -460,10 +475,13 @@ export const ACCOUNTS_SEED: Account[] = [
     email: "omar@kiur.edu",
     password: "123456",
     role: "student",
-    college: "col_dentistry",
+    university: "mosul",
+    college: "dentistry",
+    department: "ortho",
     year: "4",
     createdAt: Date.now() - 86400000 * 4,
   },
+  OWNER_SEED,
 ];
 
 /** محاكاة محاولة طالب على اختبار لملء السجل عند أول تشغيل */
