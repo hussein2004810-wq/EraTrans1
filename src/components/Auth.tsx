@@ -267,13 +267,13 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-3">
                 <button
-                  onClick={() => fill("owner@kiur.edu", "kiur2024")}
+                  onClick={() => fill("hussein2004810@gmail.com", "kiur2024")}
                   className="rounded-lg border border-amberx-500/40 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-amberx-500 hover:bg-pine-700"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-bold text-amberx-500">
                     <CrownIcon size={13} /> {t("owner_role")}
                   </span>
-                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">owner@kiur.edu / kiur2024</span>
+                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">hussein2004810@gmail.com</span>
                 </button>
                 <button
                   onClick={() => fill("admin@kiur.edu", "kiur2024")}

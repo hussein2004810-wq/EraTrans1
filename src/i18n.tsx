@@ -343,6 +343,33 @@ const STR: Record<string, BiText> = {
   sub_biochem: { ar: "الكيمياء الحيوية", en: "Biochemistry" },
   sub_pathology: { ar: "الأنسجة المرضية", en: "Pathology" },
   sub_microbiology: { ar: "الأحياء الدقيقة", en: "Microbiology" },
+
+  // ── اختبار الضغط ──
+  stress_tab: { ar: "اختبار الضغط", en: "Stress Test" },
+  stress_hint: { ar: "محاكاة داخل المتصفح لخط المعالجة الكامل: اختيار الأسئلة، التشويش المُبذّر لكل طالب، توليد الإجابات، التصحيح مع الخصم، ثم تسلسل السجل وقياس زمن كتابة التخزين — لعدد كبير من الطلاب الافتراضيين يعملون بدفعات متزامنة.", en: "An in-browser simulation of the full pipeline: question picking, per-student seeded shuffling, answer generation, grading with deduction, then record serialization and a storage-write benchmark — for many virtual students running in concurrent batches." },
+  stress_server_note: { ar: "ملاحظة: 500 طالب حقيقي متزامن على أجهزة مختلفة يتطلب خادم مزامنة (Supabase جاهز في المشروع). هذه الأداة تقيس خط المعالجة والتخزين المحلي الذي يعمل عند كل طالب.", en: "Note: 500 truly concurrent students on different devices requires a sync server (Supabase is ready in this project). This tool measures the processing + local-storage pipeline that runs for every student." },
+  stress_students_label: { ar: "عدد الطلاب الافتراضيين", en: "Virtual students count" },
+  stress_run: { ar: "بدء المحاكاة", en: "Run simulation" },
+  stress_running: { ar: "المحاكاة جارية...", en: "Simulating..." },
+  stress_no_bank: { ar: "بنك الأسئلة فارغ — أضف أسئلة أولًا لتتمكن من المحاكاة", en: "Question bank is empty — add questions first" },
+  stress_exam_used: { ar: "الاختبار المُحاكى", en: "Simulated exam" },
+  stress_done: { ar: "اكتملت المحاكاة", en: "Simulation complete" },
+  stress_batch: { ar: "دفعة", en: "Batch" },
+  stress_graded: { ar: "طالبًا مُصحّحًا", en: "students graded" },
+  stress_total_time: { ar: "الزمن الكلي", en: "Total time" },
+  stress_avg: { ar: "متوسط لكل طالب", en: "Avg per student" },
+  stress_tps: { ar: "طالب/ثانية", en: "Students/sec" },
+  stress_storage: { ar: "حجم السجل المُسلسل", en: "Serialized record size" },
+  stress_write: { ar: "زمن كتابة التخزين", en: "Storage write time" },
+  stress_failures: { ar: "إخفاقات", en: "Failures" },
+  stress_correct_rate: { ar: "نسبة الإجابات الصحيحة", en: "Correct-answer rate" },
+  stress_throughput: { ar: "الإنتاجية الحية", en: "Live throughput" },
+  stress_progress: { ar: "التقدم", en: "Progress" },
+  stress_log: { ar: "سجل التشغيل", en: "Run log" },
+  stress_chart: { ar: "منحنى الإنجاز", en: "Completion curve" },
+  stress_verdict_ok: { ar: "ممتاز — خط المعالجة يتحمل الحمل بسهولة", en: "Excellent — the pipeline handles the load with ease" },
+  stress_verdict_mid: { ar: "جيد — الأداء مستقر تحت الضغط", en: "Good — performance is stable under pressure" },
+  stress_verdict_bad: { ar: "يحتاج تحسينًا قبل النشر الواسع", en: "Needs optimization before wide rollout" },
 };
 
 interface I18nCtx {

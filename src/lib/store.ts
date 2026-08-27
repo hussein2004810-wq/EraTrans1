@@ -1,15 +1,16 @@
 import type { Question } from "../types";
 
+/* v2: إعادة تهيئة البيانات ليتفعّل حساب المالك الجديد */
 export const KEYS = {
-  accounts: "kiur.accounts.v1",
-  questions: "kiur.questions.v1",
-  exams: "kiur.exams.v1",
-  attempts: "kiur.attempts.v1",
-  sessions: "kiur.sessions.v1",
-  images: "kiur.images.v1",
-  audit: "kiur.audit.v1",
-  user: "kiur.user.v1",
-  lang: "kiur.lang.v1",
+  accounts: "kiur.accounts.v2",
+  questions: "kiur.questions.v2",
+  exams: "kiur.exams.v2",
+  attempts: "kiur.attempts.v2",
+  sessions: "kiur.sessions.v2",
+  images: "kiur.images.v2",
+  audit: "kiur.audit.v2",
+  user: "kiur.user.v2",
+  lang: "kiur.lang.v2",
 } as const;
 
 export function load<T>(key: string, fallback: T): T {

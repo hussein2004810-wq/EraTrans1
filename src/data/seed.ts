@@ -429,8 +429,8 @@ export const EXAMS_SEED: ExamDef[] = [
 
 /** مالك المنصة — يملك كل الصلاحيات ويرقّي المشرفين */
 export const OWNER_SEED: Account = {
-  name: "د. كريم العبيدي",
-  email: "owner@kiur.edu",
+  name: "حسين — مالك المنصة",
+  email: "hussein2004810@gmail.com",
   password: "kiur2024",
   role: "owner",
   createdAt: Date.now() - 86400000 * 30,

@@ -136,6 +136,15 @@ export const InfoIcon = (p: P) => (
 export const ShareIcon = (p: P) => (
   <svg {...base(p)}><circle cx="6" cy="12" r="2.5" /><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.2 10.8l7-4M8.2 13.2l7 4" /></svg>
 );
+export const GaugeIcon = (p: P) => (
+  <svg {...base(p)}><path d="M4.5 19a9 9 0 1 1 15 0" /><path d="M12 13.5l3.8-3.8" /><circle cx="12" cy="13.5" r="1.5" /></svg>
+);
+export const PlayIcon = (p: P) => (
+  <svg {...base(p)} fill="currentColor" stroke="none"><path d="M7.5 4.5v15l12-7.5-12-7.5z" /></svg>
+);
+export const TerminalIcon = (p: P) => (
+  <svg {...base(p)}><rect x="3" y="4.5" width="18" height="15" rx="2" /><path d="M7 9l3 3-3 3M12.5 15.5H17" /></svg>
+);
 export const CrownIcon = (p: P) => (
   <svg {...base(p)}><path d="M3 17l1.5-9L9 12l3-7 3 7 4.5-4L21 17H3z" /><path d="M3 20.5h18" /></svg>
 );

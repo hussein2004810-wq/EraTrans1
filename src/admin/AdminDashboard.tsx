@@ -11,14 +11,15 @@ import ImageLibrary from "./ImageLibrary";
 import ExportCenter from "./ExportCenter";
 import AdminsPanel from "./AdminsPanel";
 import AuditLog from "./AuditLog";
+import StressTest from "./StressTest";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, ImageIcon, InfoIcon, LayersIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, ImageIcon, InfoIcon, LayersIcon,
   LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 type Tab =
   | "overview" | "exams" | "questions" | "images" | "import"
-  | "students" | "reports" | "export" | "audit" | "admins";
+  | "students" | "reports" | "export" | "audit" | "admins" | "stress";
 
 interface Props {
   user: Account;
@@ -59,6 +60,7 @@ export default function AdminDashboard(props: Props) {
     { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} />, show: has("reports") },
     { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} />, show: has("export") },
     { id: "audit", label: t("audit_tab"), icon: <EyeIcon size={16} />, show: has("audit") },
+    { id: "stress", label: t("stress_tab"), icon: <GaugeIcon size={16} />, show: isOwner },
     { id: "admins", label: t("admins_tab"), icon: <CrownIcon size={16} />, show: isOwner },
   ];
   const tabs = allTabs.filter((x) => x.show);
@@ -153,6 +155,7 @@ export default function AdminDashboard(props: Props) {
           {activeTab === "reports" && <Reports exams={exams} attempts={attempts} />}
           {activeTab === "export" && <ExportCenter exams={exams} attempts={attempts} />}
           {activeTab === "audit" && <AuditLog entries={audit} />}
+          {activeTab === "stress" && isOwner && <StressTest questions={questions} exams={exams} />}
           {activeTab === "admins" && isOwner && (
             <AdminsPanel
               accounts={accounts}
