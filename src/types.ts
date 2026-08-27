@@ -1,3 +1,11 @@
+export type Lang = "ar" | "en";
+
+/** نص ثنائي اللغة */
+export interface BiText {
+  ar: string;
+  en: string;
+}
+
 export type SubjectId =
   | "anatomy"
   | "physiology"
@@ -8,54 +16,123 @@ export type SubjectId =
 
 export interface Subject {
   id: SubjectId;
-  name: string;
-  nameEn: string;
+  name: BiText;
   color: string;
 }
+
+/** نمط السؤال: اختيار من متعدد | صح/خطأ | أكمل الفراغ | حالة سريرية */
+export type QType = "mcq" | "tf" | "fill" | "case";
 
 export interface Question {
   id: string;
   subject: SubjectId;
+  type: QType;
   difficulty: 1 | 2 | 3;
-  text: string;
-  options: string[];
+  text: BiText;
+  /** مسار صورة (للحالات السريرية) */
+  image?: string;
+  /** خيارات mcq/case فقط (4 خيارات أصلية) */
+  options: BiText[];
+  /** فهرس الخيار الصحيح الأصلي (في tf: 0 = صحيح، 1 = خطأ) */
   correct: number;
-  explanation: string;
+  /** إجابات مقبولة لأسئلة أكمل الفراغ */
+  answers?: string[];
+  explanation: BiText;
 }
 
-/** سؤال بعد خلط خياراته — يستخدم أثناء الاختبار وفي المراجعة */
-export interface RuntimeQuestion {
-  base: Question;
-  options: string[];
-  correct: number;
-}
-
-export type ExamMode = "exam" | "study";
-
-export interface ExamConfig {
-  mode: ExamMode;
-  subjectIds: SubjectId[]; // فارغة = كل المقررات
+export interface ExamDef {
+  id: string;
+  title: BiText;
+  description: BiText;
+  /** مقررات الاختبار — فارغة = كل المقررات */
+  subjectIds: SubjectId[];
+  /** اختيار يدوي لأسئلة محددة (إذا امتلأت تتجاهل العدد والتصفية) */
+  questionIds: string[];
+  /** أنماط الأسئلة المسموحة عند الاختيار الآلي */
+  questionTypes: QType[];
+  /** عدد الأسئلة عند الاختيار الآلي */
   count: number;
-  secondsPerQuestion: number;
+  /** مدة الاختبار بالدقائق — 0 = بلا وقت */
+  minutes: number;
+  /** نسبة النجاح يحددها المشرف */
+  passPercent: number;
+  /** خصم درجات للإجابة الخاطئة */
+  negativeMarking: boolean;
+  /** مقدار الخصم لكل إجابة خاطئة (جزء من درجة السؤال، مثال 0.25) */
+  deduction: number;
+  /** ترتيب عشوائي للأسئلة مع كل محاولة */
+  shuffleQuestions: boolean;
+  /** ترتيب عشوائي لاختيارات كل سؤال مع كل إعادة محاولة */
+  shuffleOptions: boolean;
+  /** السماح بحفظ التقدم والإكمال لاحقًا */
+  allowSaveResume: boolean;
+  published: boolean;
+  createdAt: number;
 }
 
-export interface ExamResult {
-  config: ExamConfig;
-  questions: RuntimeQuestion[];
-  answers: (number | null)[];
+export interface Account {
+  name: string;
+  email: string;
+  password: string;
+  role: "student" | "admin";
+  college?: string;
+  year?: string;
+  createdAt: number;
+}
+
+/** جلسة اختبار محفوظة (استكمال لاحقًا) */
+export interface SavedSession {
+  id: string;
+  examId: string;
+  studentEmail: string;
+  questionIds: string[];
+  optionOrders: number[][];
+  answers: (number | string | null)[];
   flags: boolean[];
-  durationSec: number;
-  autoSubmitted?: boolean;
+  currentIndex: number;
+  remainingSec: number | null;
+  startedAt: number;
+  savedAt: number;
+}
+
+export interface ReviewItem {
+  qid: string;
+  order: number[];
+  answer: number | string | null;
 }
 
 export interface Attempt {
   id: string;
+  examId: string;
+  examTitle: BiText;
+  studentEmail: string;
+  studentName: string;
   date: number;
-  mode: ExamMode;
-  subjectIds: SubjectId[];
   total: number;
   correct: number;
+  wrong: number;
+  skipped: number;
+  rawScore: number;
   percent: number;
+  passPercent: number;
+  passed: boolean;
   durationSec: number;
+  negative: boolean;
+  deduction: number;
   perSubject: Partial<Record<SubjectId, { c: number; t: number }>>;
+  review: ReviewItem[];
+  autoSubmitted?: boolean;
+}
+
+/** نتيجة مباشرة بعد التسليم (للمراجعة الكاملة) */
+export interface ExamResult {
+  exam: ExamDef;
+  items: {
+    q: Question;
+    order: number[];
+    answer: number | string | null;
+    flagged: boolean;
+  }[];
+  durationSec: number;
+  autoSubmitted?: boolean;
 }
