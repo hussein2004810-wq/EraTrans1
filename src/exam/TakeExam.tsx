@@ -4,7 +4,7 @@ import { useI18n } from "../i18n";
 import { fmtClock, KEYS, save } from "../lib/store";
 import { DifficultyDots, Modal, SubjectTag, TypeBadge } from "../components/ui";
 import {
-  ClockIcon, FlagIcon, SaveIcon, TimerIcon, XIcon,
+  ClockIcon, EyeIcon, FlagIcon, SaveIcon, ShieldIcon, TimerIcon, XIcon,
   ArrowRightIcon, ArrowLeftIcon, CheckIcon,
 } from "../components/icons";
 
@@ -26,6 +26,11 @@ export default function TakeExam({ exam, session, bank, onFinish, onExit }: Prop
   const [remaining, setRemaining] = useState<number | null>(session.remainingSec);
   const [confirm, setConfirm] = useState<null | "submit" | "exit">(null);
   const [mapOpen, setMapOpen] = useState(false);
+  /* ── طبقة الأمان ── */
+  const exitsRef = useRef(0);
+  const [exits, setExits] = useState(0);
+  const [exitWarn, setExitWarn] = useState(false);
+  const [fs, setFs] = useState(false);
   const submitted = useRef(false);
   const startRef = useRef(session.startedAt);
 
@@ -83,6 +88,46 @@ export default function TakeExam({ exam, session, bank, onFinish, onExit }: Prop
     return () => clearInterval(iv);
   }, [timed, remaining === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── الأمان: منع النسخ والقوائم + رصد مغادرة النافذة + ملء الشاشة ── */
+  useEffect(() => {
+    const block = (e: Event) => e.preventDefault();
+    const onKeySec = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && ["c", "x", "p", "s", "u"].includes(e.key.toLowerCase())) e.preventDefault();
+      if (e.key === "F12") e.preventDefault();
+    };
+    const onVis = () => {
+      if (document.hidden && !submitted.current) {
+        exitsRef.current += 1;
+        setExits(exitsRef.current);
+        setExitWarn(true);
+      }
+    };
+    const onFs = () => setFs(!!document.fullscreenElement);
+    document.addEventListener("copy", block);
+    document.addEventListener("cut", block);
+    document.addEventListener("contextmenu", block);
+    window.addEventListener("keydown", onKeySec);
+    document.addEventListener("visibilitychange", onVis);
+    document.addEventListener("fullscreenchange", onFs);
+    setFs(!!document.fullscreenElement);
+    return () => {
+      document.removeEventListener("copy", block);
+      document.removeEventListener("cut", block);
+      document.removeEventListener("contextmenu", block);
+      window.removeEventListener("keydown", onKeySec);
+      document.removeEventListener("visibilitychange", onVis);
+      document.removeEventListener("fullscreenchange", onFs);
+    };
+  }, []);
+
+  const enterFs = () => {
+    try {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } catch {
+      /* غير مدعوم */
+    }
+  };
+
   const doSubmit = useCallback(
     (auto: boolean) => {
       if (submitted.current) return;
@@ -103,6 +148,7 @@ export default function TakeExam({ exam, session, bank, onFinish, onExit }: Prop
         })),
         durationSec: Math.round((Date.now() - startRef.current) / 1000),
         autoSubmitted: auto,
+        exits: exitsRef.current,
       });
     },
     [answers, flags, exam, qs, session, onFinish]
@@ -175,7 +221,25 @@ export default function TakeExam({ exam, session, bank, onFinish, onExit }: Prop
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen select-none">
+      {/* تحذير رصد مغادرة النافذة */}
+      <Modal open={exitWarn} onClose={() => setExitWarn(false)}>
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blood-100 text-blood-600">
+            <EyeIcon size={20} />
+          </span>
+          <div>
+            <h3 className="font-display text-lg font-bold">{t("sec_exit_warn_t")}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+              {t("sec_exit_warn_a")} <b className="text-blood-600">{exits}</b> {t("sec_exit_warn_b")}
+            </p>
+          </div>
+        </div>
+        <button onClick={() => setExitWarn(false)} className="btn-primary mt-5 w-full">
+          {t("close")}
+        </button>
+      </Modal>
+
       {/* ───── الرأس ───── */}
       <header className="monitor-band sticky top-0 z-40 border-b border-pine-700 text-paper shadow-xl shadow-pine-950/30">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
@@ -215,6 +279,24 @@ export default function TakeExam({ exam, session, bank, onFinish, onExit }: Prop
               <ClockIcon size={18} />
               <span className="font-display text-xl font-bold tabular-nums">{t("no_time_limit")}</span>
             </div>
+          )}
+
+          {exits > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-xl border border-blood-600/60 bg-blood-600/15 px-3 py-2 text-xs font-bold text-red-300"
+              title={t("sec_exits")}
+            >
+              <EyeIcon size={14} /> {exits} {t("sec_exits")}
+            </span>
+          )}
+          {!fs && (
+            <button
+              onClick={enterFs}
+              title={t("sec_fs_hint")}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-pine-700 bg-pine-800/70 px-3 py-2 text-xs font-bold text-pulse-300 transition-colors hover:border-pulse-500 hover:text-pulse-100"
+            >
+              <ShieldIcon size={14} /> {t("sec_fs")}
+            </button>
           )}
 
           <button

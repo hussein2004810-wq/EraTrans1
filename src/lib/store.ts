@@ -6,6 +6,7 @@ export const KEYS = {
   exams: "kiur.exams.v1",
   attempts: "kiur.attempts.v1",
   sessions: "kiur.sessions.v1",
+  images: "kiur.images.v1",
   user: "kiur.user.v1",
   lang: "kiur.lang.v1",
 } as const;
@@ -19,11 +20,12 @@ export function load<T>(key: string, fallback: T): T {
   }
 }
 
-export function save(key: string, value: unknown) {
+export function save(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    /* التخزين غير متاح */
+    return false;
   }
 }
 
@@ -38,6 +40,65 @@ export function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/* ───────── تشويش مُبذّر: ترتيب مختلف لكل طالب وكل محاولة ───────── */
+
+export function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function shuffleSeeded<T>(arr: T[], seed: number): T[] {
+  const a = [...arr];
+  const rnd = mulberry32(seed);
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ───────── ضغط الصور المرفوعة ───────── */
+
+export function fileToDataUrl(file: File, maxWidth = 1100, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("canvas unavailable"));
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("bad image"));
+    };
+    img.src = url;
+  });
 }
 
 /* ───────── التصحيح ───────── */

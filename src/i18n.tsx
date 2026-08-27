@@ -55,6 +55,42 @@ const STR: Record<string, BiText> = {
   import_tab: { ar: "استيراد الأسئلة", en: "Import Questions" },
   students_tab: { ar: "سجل الطلاب", en: "Students Registry" },
   reports_tab: { ar: "التقارير", en: "Reports" },
+  images_tab: { ar: "مكتبة الصور", en: "Image Library" },
+  export_tab: { ar: "تصدير الدرجات", en: "Export Grades" },
+
+  // ── مكتبة الصور ──
+  img_upload: { ar: "رفع صورة جديدة", en: "Upload new image" },
+  img_from_library: { ar: "من المكتبة", en: "From library" },
+  img_upload_new: { ar: "رفع صورة", en: "Upload image" },
+  img_remove: { ar: "إزالة الصورة", en: "Remove image" },
+  img_use_question: { ar: "إنشاء سؤال عليها", en: "Create question on it" },
+  img_empty: { ar: "لا صور بعد — ارفع صور أشعة أو تخطيط قلب أو حالات سريرية", en: "No images yet — upload X-rays, ECG strips or clinical photos" },
+  img_hint: { ar: "تُضغط الصور وتُحفظ محليًا، ثم تُرفق بأسئلة الحالات السريرية أو تُنشئ سؤالًا مباشرة من هنا.", en: "Images are compressed and stored locally, then attached to clinical questions — or create a question straight from here." },
+  img_title_ph: { ar: "وصف الصورة...", en: "Image description..." },
+  img_quota: { ar: "مساحة التخزين المحلي ممتلئة — احذف صورًا قديمة", en: "Local storage is full — delete old images" },
+  img_pick_title: { ar: "اختر صورة من المكتبة", en: "Pick an image from the library" },
+
+  // ── تصدير الدرجات ──
+  exp_title: { ar: "تصدير درجات الطلاب", en: "Export Student Grades" },
+  exp_choose_exam: { ar: "اختيار الاختبار", en: "Choose exam" },
+  exp_all_exams: { ar: "جميع الاختبارات", en: "All exams" },
+  exp_format: { ar: "صيغة الملف", en: "File format" },
+  exp_rows: { ar: "سجل", en: "records" },
+  exp_do_excel: { ar: "تصدير Excel", en: "Export Excel" },
+  exp_do_word: { ar: "تصدير Word", en: "Export Word" },
+  exp_done: { ar: "تم التصدير بنجاح ✓", en: "Exported successfully ✓" },
+  exp_preview: { ar: "معاينة السجلات", en: "Records preview" },
+  exp_no_rows: { ar: "لا محاولات مسجلة للتصدير بعد", en: "No recorded attempts to export yet" },
+
+  // ── الأمان أثناء الاختبار ──
+  sec_fs: { ar: "ملء الشاشة", en: "Fullscreen" },
+  sec_fs_hint: { ar: "ادخل ملء الشاشة لقفل نافذة الاختبار", en: "Enter fullscreen to lock the exam window" },
+  sec_copy_blocked: { ar: "النسخ والقوائم معطّلة أثناء الاختبار", en: "Copying and menus are disabled during the exam" },
+  sec_exit_warn_t: { ar: "تم رصد مغادرة النافذة", en: "Window-leave detected" },
+  sec_exit_warn_a: { ar: "غادرت نافذة الاختبار", en: "You left the exam window" },
+  sec_exit_warn_b: { ar: "مرة — تُسجَّل المغادرات في تقرير المحاولة ويراها المشرف.", en: "time(s) — leaves are recorded in the attempt report and visible to the admin." },
+  sec_exits: { ar: "مغادرات", en: "Leaves" },
+  local_data_note: { ar: "البيانات تُحفظ محليًا على كل جهاز (نسخة تجريبية) — اربط Supabase للمزامنة الفعلية بين الأجهزة.", en: "Data is stored locally per device (demo build) — connect Supabase for real cross-device sync." },
 
   // ── إحصاءات ──
   attempts_n: { ar: "المحاولات", en: "Attempts" },

@@ -29,15 +29,23 @@ export interface Question {
   type: QType;
   difficulty: 1 | 2 | 3;
   text: BiText;
-  /** مسار صورة (للحالات السريرية) */
+  /** صورة السؤال (حالات سريرية) — رابط أو Data URL من مكتبة الصور */
   image?: string;
-  /** خيارات mcq/case فقط (4 خيارات أصلية) */
+  /** خيارات mcq/case فقط */
   options: BiText[];
   /** فهرس الخيار الصحيح الأصلي (في tf: 0 = صحيح، 1 = خطأ) */
   correct: number;
   /** إجابات مقبولة لأسئلة أكمل الفراغ */
   answers?: string[];
   explanation: BiText;
+}
+
+/** صورة مرفوعة من المشرف في مكتبة الصور */
+export interface ImageAsset {
+  id: string;
+  title: string;
+  dataUrl: string;
+  createdAt: number;
 }
 
 export interface ExamDef {
@@ -58,7 +66,7 @@ export interface ExamDef {
   passPercent: number;
   /** خصم درجات للإجابة الخاطئة */
   negativeMarking: boolean;
-  /** مقدار الخصم لكل إجابة خاطئة (جزء من درجة السؤال، مثال 0.25) */
+  /** مقدار الخصم لكل إجابة خاطئة (جزء من درجة السؤال) */
   deduction: number;
   /** ترتيب عشوائي للأسئلة مع كل محاولة */
   shuffleQuestions: boolean;
@@ -122,6 +130,8 @@ export interface Attempt {
   perSubject: Partial<Record<SubjectId, { c: number; t: number }>>;
   review: ReviewItem[];
   autoSubmitted?: boolean;
+  /** عدد مرات مغادرة نافذة الاختبار (رصد الأمان) */
+  exits?: number;
 }
 
 /** نتيجة مباشرة بعد التسليم (للمراجعة الكاملة) */
@@ -135,4 +145,5 @@ export interface ExamResult {
   }[];
   durationSec: number;
   autoSubmitted?: boolean;
+  exits?: number;
 }

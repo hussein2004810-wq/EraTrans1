@@ -189,7 +189,19 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                         )}
                       </div>
 
-                      <button onClick={() => onStart(exam)} disabled={disabled} className="btn-primary mt-5 w-full">
+                      <button
+                        onClick={() => {
+                          /* محاولة قفل النافذة بملء الشاشة قبل بدء الاختبار */
+                          try {
+                            document.documentElement.requestFullscreen?.().catch(() => {});
+                          } catch {
+                            /* غير مدعوم */
+                          }
+                          onStart(exam);
+                        }}
+                        disabled={disabled}
+                        className="btn-primary mt-5 w-full"
+                      >
                         <GradCapIcon size={17} />
                         {t("start_exam")}
                       </button>

@@ -6,12 +6,14 @@ import EcgLine from "../components/EcgLine";
 import { EmptyState, KiurWordmark, LangSwitch, Modal, formatDate } from "../components/ui";
 import QuestionBank, { ImportPanel } from "./QuestionBank";
 import ExamBuilder from "./ExamBuilder";
+import ImageLibrary from "./ImageLibrary";
+import ExportCenter from "./ExportCenter";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, EyeIcon, LayersIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, DownloadIcon, EyeIcon, ImageIcon, InfoIcon, LayersIcon,
   LogoutIcon, PlusIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
-type Tab = "overview" | "exams" | "questions" | "import" | "students" | "reports";
+type Tab = "overview" | "exams" | "questions" | "images" | "import" | "students" | "reports" | "export";
 
 interface Props {
   user: Account;
@@ -32,15 +34,18 @@ export default function AdminDashboard(props: Props) {
   const { user, questions, exams, attempts, accounts, onLogout } = props;
   const { t, bi, lang } = useI18n();
   const [tab, setTab] = useState<Tab>("overview");
+  const [presetImage, setPresetImage] = useState<string | null>(null);
 
   const students = accounts.filter((a) => a.role === "student");
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: t("overview"), icon: <ChartIcon size={16} /> },
     { id: "exams", label: t("exams_tab"), icon: <ClipboardIcon size={16} /> },
     { id: "questions", label: t("question_bank"), icon: <LayersIcon size={16} /> },
+    { id: "images", label: t("images_tab"), icon: <ImageIcon size={16} /> },
     { id: "import", label: t("import_tab"), icon: <UploadIcon size={16} /> },
     { id: "students", label: t("students_tab"), icon: <UsersIcon size={16} /> },
     { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} /> },
+    { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} /> },
   ];
 
   return (
@@ -100,13 +105,28 @@ export default function AdminDashboard(props: Props) {
             />
           )}
           {tab === "questions" && (
-            <QuestionBank questions={questions} onSave={props.onSaveQuestion} onDelete={props.onDeleteQuestion} />
+            <QuestionBank
+              questions={questions}
+              onSave={props.onSaveQuestion}
+              onDelete={props.onDeleteQuestion}
+              presetImage={presetImage}
+              onPresetConsumed={() => setPresetImage(null)}
+            />
+          )}
+          {tab === "images" && (
+            <ImageLibrary
+              onUseInQuestion={(url) => {
+                setPresetImage(url);
+                setTab("questions");
+              }}
+            />
           )}
           {tab === "import" && <ImportPanel questions={questions} onImport={props.onImportQuestions} />}
           {tab === "students" && (
             <StudentsRegistry students={students} attempts={attempts} onDelete={props.onDeleteStudent} />
           )}
           {tab === "reports" && <Reports exams={exams} attempts={attempts} />}
+          {tab === "export" && <ExportCenter exams={exams} attempts={attempts} />}
         </div>
       </div>
     </div>
@@ -262,6 +282,11 @@ function StudentsRegistry({
         <span className="ms-auto flex items-center gap-1.5 text-[11px] font-bold text-amberx-600">
           <ShieldIcon size={13} /> {t("admin_portal")}
         </span>
+      </div>
+
+      <div className="flex items-start gap-2.5 border-b border-line bg-amberx-100/60 px-6 py-3 text-xs leading-relaxed text-amberx-600">
+        <InfoIcon size={15} className="mt-0.5 shrink-0" />
+        <p>{t("local_data_note")}</p>
       </div>
 
       {students.length === 0 ? (

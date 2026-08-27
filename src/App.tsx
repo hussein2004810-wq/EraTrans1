@@ -5,7 +5,7 @@ import type {
 import {
   ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED,
 } from "./data/seed";
-import { grade, KEYS, load, save, shuffle, uid } from "./lib/store";
+import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
 import { I18nProvider } from "./i18n";
 import Auth from "./components/Auth";
 import StudentDashboard from "./student/StudentDashboard";
@@ -46,11 +46,11 @@ export default function App() {
     return load<Account[]>(KEYS.accounts, []).find((a) => a.email === email) ?? null;
   });
 
-  useEffect(() => save(KEYS.questions, questions), [questions]);
-  useEffect(() => save(KEYS.exams, exams), [exams]);
-  useEffect(() => save(KEYS.accounts, accounts), [accounts]);
-  useEffect(() => save(KEYS.attempts, attempts), [attempts]);
-  useEffect(() => save(KEYS.sessions, sessions), [sessions]);
+  useEffect(() => { save(KEYS.questions, questions); }, [questions]);
+  useEffect(() => { save(KEYS.exams, exams); }, [exams]);
+  useEffect(() => { save(KEYS.accounts, accounts); }, [accounts]);
+  useEffect(() => { save(KEYS.attempts, attempts); }, [attempts]);
+  useEffect(() => { save(KEYS.sessions, sessions); }, [sessions]);
 
   /* ── الشاشات ── */
   const [screen, setScreen] = useState<Screen>(user ? "home" : "auth");
@@ -104,7 +104,10 @@ export default function App() {
             exam.questionTypes.includes(q.type)
         );
       }
-      const picked = (exam.shuffleQuestions ? shuffle(pool) : pool).slice(
+      /* تشويش مُبذّر ببصمة الطالب + اللحظة: ترتيب فريد لكل طالب ولكل محاولة
+         حتى لو دخل طالبان الاختبار في الثانية نفسها */
+      const seed = hashStr(email) ^ (Date.now() & 0xffffff);
+      const picked = (exam.shuffleQuestions ? shuffleSeeded(pool, seed) : pool).slice(
         0,
         exam.questionIds.length > 0 ? pool.length : Math.min(exam.count, pool.length)
       );
@@ -114,9 +117,11 @@ export default function App() {
         examId: exam.id,
         studentEmail: email,
         questionIds: picked.map((q) => q.id),
-        optionOrders: picked.map((q) => {
+        optionOrders: picked.map((q, qi) => {
           const base = q.options.map((_, i) => i);
-          return (q.type === "mcq" || q.type === "case") && exam.shuffleOptions ? shuffle(base) : base;
+          return (q.type === "mcq" || q.type === "case") && exam.shuffleOptions
+            ? shuffleSeeded(base, seed + qi * 7919)
+            : base;
         }),
         answers: picked.map(() => null),
         flags: picked.map(() => false),
@@ -174,10 +179,10 @@ export default function App() {
       negative: result.exam.negativeMarking,
       deduction: result.exam.deduction,
       perSubject: g.perSubject,
-      review: result.items.map((it) => ({ qid: it.q.id, order: it.order, answer: it.answer })),
-      autoSubmitted: result.autoSubmitted,
-    };
-    setAttempts((prev) => [attempt, ...prev]);
+        review: result.items.map((it) => ({ qid: it.q.id, order: it.order, answer: it.answer })),
+        autoSubmitted: result.autoSubmitted,
+        exits: result.exits,
+      };    setAttempts((prev) => [attempt, ...prev]);
     setSessions((prev) => prev.filter((s) => !(s.examId === result.exam.id && s.studentEmail === user.email)));
     setLastResult(result);
     setLastAttempt(attempt);

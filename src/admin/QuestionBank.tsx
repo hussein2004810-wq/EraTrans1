@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Question, QType, SubjectId } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS, subjectById } from "../data/seed";
-import { uid } from "../lib/store";
+import { fileToDataUrl, uid } from "../lib/store";
+import ImagePicker from "./ImagePicker";
 import {
   downloadExcelTemplate,
   downloadWordTemplate,
@@ -11,7 +12,7 @@ import {
 } from "../lib/importer";
 import { DifficultyDots, EmptyState, Modal, SubjectTag, TypeBadge } from "../components/ui";
 import {
-  CheckIcon, DownloadIcon, EditIcon, FileIcon, InfoIcon, LayersIcon,
+  CheckIcon, DownloadIcon, EditIcon, FileIcon, ImageIcon, InfoIcon, LayersIcon,
   PlusIcon, SaveIcon, SearchIcon, SheetIcon, TrashIcon, UploadIcon, XIcon,
 } from "../components/icons";
 
@@ -23,10 +24,14 @@ export default function QuestionBank({
   questions,
   onSave,
   onDelete,
+  presetImage,
+  onPresetConsumed,
 }: {
   questions: Question[];
   onSave: (q: Question) => void;
   onDelete: (id: string) => void;
+  presetImage?: string | null;
+  onPresetConsumed?: () => void;
 }) {
   const { t, bi } = useI18n();
   const [fSubject, setFSubject] = useState<"all" | SubjectId>("all");
@@ -61,6 +66,18 @@ export default function QuestionBank({
     answers: [],
     explanation: { ar: "", en: "" },
   });
+
+  /* فتح المحرر تلقائيًا عند الوصول من مكتبة الصور بسؤال جديد على صورة */
+  useEffect(() => {
+    if (presetImage) {
+      const b = blank();
+      b.type = "case";
+      b.image = presetImage;
+      setDraft(b);
+      onPresetConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetImage]);
 
   return (
     <div className="card overflow-hidden">
@@ -154,6 +171,20 @@ function QuestionEditor({
   const { t, bi } = useI18n();
   const [q, setQ] = useState<Question>(initial);
   const [err, setErr] = useState<string | null>(null);
+  const [pickOpen, setPickOpen] = useState(false);
+  const upRef = useRef<HTMLInputElement>(null);
+
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      const url = await fileToDataUrl(f, 900);
+      setQ((p) => ({ ...p, image: url }));
+    } catch {
+      setErr(t("img_quota"));
+    }
+  };
 
   const setOpt = (i: number, lang: "ar" | "en", v: string) =>
     setQ((p) => {
@@ -250,11 +281,49 @@ function QuestionEditor({
               </div>
             ))}
           </div>
-          <div className="mt-3">
+          <div className="mt-3 rounded-xl border border-line bg-paper/50 p-3.5">
             <label className="lbl">{t("image_path")} {q.type === "case" && "★"}</label>
-            <input className="input" dir="ltr" value={q.image ?? ""} onChange={(e) => setQ({ ...q, image: e.target.value })} placeholder="https://..." />
-            {q.image && (
-              <img src={q.image} alt="" className="mt-2 max-h-32 rounded-lg border border-line" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+            {q.image ? (
+              <div className="mt-1 flex items-start gap-3">
+                <img
+                  src={q.image}
+                  alt=""
+                  className="h-28 rounded-lg border border-line bg-pine-950 object-contain"
+                  onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                />
+                <button
+                  onClick={() => setQ({ ...q, image: undefined })}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-blood-600 transition-colors hover:border-blood-600"
+                >
+                  <TrashIcon size={12} /> {t("img_remove")}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-1 flex flex-wrap gap-2">
+                <button onClick={() => upRef.current?.click()} className="btn-ghost text-xs">
+                  <UploadIcon size={13} /> {t("img_upload_new")}
+                </button>
+                <button onClick={() => setPickOpen(true)} className="btn-ghost text-xs">
+                  <ImageIcon size={13} /> {t("img_from_library")}
+                </button>
+              </div>
+            )}
+            <input ref={upRef} type="file" accept="image/*" className="hidden" onChange={onUpload} />
+            <input
+              className="input mt-2"
+              dir="ltr"
+              value={q.image && !q.image.startsWith("data:") ? q.image : ""}
+              onChange={(e) => setQ({ ...q, image: e.target.value || undefined })}
+              placeholder="https://..."
+            />
+            {pickOpen && (
+              <ImagePicker
+                onPick={(url) => {
+                  setQ({ ...q, image: url });
+                  setPickOpen(false);
+                }}
+                onClose={() => setPickOpen(false)}
+              />
             )}
           </div>
         </div>
