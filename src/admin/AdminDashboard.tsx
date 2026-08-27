@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Account, Attempt, AuditEntry, ExamDef, PermKey, Question, SavedSession } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
-import { findCollege, findDept, findUniversity } from "../data/hierarchy";
+import { findCollege, findDept, findDeptInUniversity, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
 import { EmptyState, KiurWordmark, LangSwitch, Modal, formatDate } from "../components/ui";
 import QuestionBank, { ImportPanel } from "./QuestionBank";
@@ -13,7 +13,7 @@ import AdminsPanel from "./AdminsPanel";
 import AuditLog from "./AuditLog";
 import StressTest from "./StressTest";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, ImageIcon, InfoIcon, LayersIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, LayersIcon,
   LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
@@ -50,6 +50,18 @@ export default function AdminDashboard(props: Props) {
   const has = (p: PermKey) => isOwner || (user.perms ?? []).includes(p);
 
   const students = accounts.filter((a) => a.role === "student");
+
+  /* ── النطاق الإداري: المالك يرى كل شيء، المشرف يرى جامعته/قسمه فقط ── */
+  const scopeUni = isOwner ? "" : user.scopeUniversity ?? "";
+  const scopeDept = isOwner ? "" : user.scopeDept ?? "";
+  const scopedStudents = students.filter(
+    (s) => isOwner || (!!scopeUni && s.university === scopeUni && (!scopeDept || s.department === scopeDept))
+  );
+  const scopedEmails = useMemo(() => new Set(scopedStudents.map((s) => s.email)), [scopedStudents]);
+  const scopedAttempts = attempts.filter((a) => isOwner || scopedEmails.has(a.studentEmail));
+  const scopedExams = isOwner ? exams : exams.filter((e) => e.university === scopeUni);
+  const noScope = !isOwner && !scopeUni;
+
   const allTabs: { id: Tab; label: string; icon: React.ReactNode; show: boolean }[] = [
     { id: "overview", label: t("overview"), icon: <ChartIcon size={16} />, show: true },
     { id: "exams", label: t("exams_tab"), icon: <ClipboardIcon size={16} />, show: has("exams") },
@@ -83,6 +95,32 @@ export default function AdminDashboard(props: Props) {
             {isOwner ? <CrownIcon size={12} /> : <ShieldIcon size={12} />}
             {isOwner ? t("owner_role") : t("admin_role")}
           </span>
+          {!isOwner && (
+            <span
+              className={
+                "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold md:inline-flex " +
+                (scopeUni
+                  ? "border-pulse-500/40 bg-pulse-500/10 text-pulse-300"
+                  : "border-blood-600/50 bg-blood-600/15 text-red-300")
+              }
+              title={t("scope_you")}
+            >
+              <GradCapIcon size={12} />
+              {scopeUni
+                ? `${bi(findUniversity(scopeUni)?.name ?? { ar: scopeUni, en: scopeUni })}${
+                    scopeDept
+                      ? " · " +
+                        bi(
+                          findDeptInUniversity(scopeUni, scopeDept)?.dept.name ?? {
+                            ar: scopeDept,
+                            en: scopeDept,
+                          }
+                        )
+                      : " · " + t("scope_all_depts")
+                  }`
+                : t("scope_none_warn")}
+            </span>
+          )}
           <span className="hidden text-xs text-pulse-300/70 sm:inline">{user.name}</span>
           <span className="ms-auto flex items-center gap-2">
             <LangSwitch />
@@ -121,14 +159,21 @@ export default function AdminDashboard(props: Props) {
         </nav>
 
         <div className="min-w-0">
-          {activeTab === "overview" && <Overview students={students} questions={questions} exams={exams} attempts={attempts} />}
+          {noScope && (
+            <div className="anim-pop mb-4 flex items-start gap-2.5 rounded-xl border border-blood-600/40 bg-blood-100 px-4 py-3 text-sm font-semibold text-blood-700">
+              <InfoIcon size={17} className="mt-0.5 shrink-0" />
+              {t("scope_none_warn")}
+            </div>
+          )}
+          {activeTab === "overview" && <Overview students={scopedStudents} questions={questions} exams={scopedExams} attempts={scopedAttempts} />}
           {activeTab === "exams" && (
             <ExamBuilder
-              exams={exams}
+              exams={scopedExams}
               questions={questions}
-              attempts={attempts}
+              attempts={scopedAttempts}
               onSave={props.onSaveExam}
               onDelete={props.onDeleteExam}
+              lockedUniversity={isOwner ? null : scopeUni}
             />
           )}
           {activeTab === "questions" && (
@@ -150,10 +195,10 @@ export default function AdminDashboard(props: Props) {
           )}
           {activeTab === "import" && <ImportPanel questions={questions} onImport={props.onImportQuestions} />}
           {activeTab === "students" && (
-            <StudentsRegistry students={students} attempts={attempts} onDelete={props.onDeleteStudent} />
+            <StudentsRegistry students={scopedStudents} attempts={scopedAttempts} onDelete={props.onDeleteStudent} />
           )}
-          {activeTab === "reports" && <Reports exams={exams} attempts={attempts} />}
-          {activeTab === "export" && <ExportCenter exams={exams} attempts={attempts} />}
+          {activeTab === "reports" && <Reports exams={scopedExams} attempts={scopedAttempts} />}
+          {activeTab === "export" && <ExportCenter exams={scopedExams} attempts={scopedAttempts} accounts={accounts} />}
           {activeTab === "audit" && <AuditLog entries={audit} />}
           {activeTab === "stress" && isOwner && <StressTest questions={questions} exams={exams} />}
           {activeTab === "admins" && isOwner && (

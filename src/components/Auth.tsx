@@ -265,7 +265,7 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 <HeartPulseIcon size={14} />
                 {t("demo_accounts")}
               </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <button
                   onClick={() => fill("hussein2004810@gmail.com", "kiur2024")}
                   className="rounded-lg border border-amberx-500/40 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-amberx-500 hover:bg-pine-700"
@@ -280,9 +280,18 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                   className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
-                    <ShieldIcon size={13} /> {t("admin_role")}
+                    <ShieldIcon size={13} /> {t("admin_role")} · {t("university_col")}
                   </span>
                   <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">admin@kiur.edu / kiur2024</span>
+                </button>
+                <button
+                  onClick={() => fill("admin2@kiur.edu", "kiur2024")}
+                  className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
+                    <ShieldIcon size={13} /> {t("admin_role")} · {t("department_col")}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">admin2@kiur.edu / kiur2024</span>
                 </button>
                 <button
                   onClick={() => fill("student@kiur.edu", "123456")}

@@ -60,7 +60,10 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
   );
   const resumeExam = resumable ? exams.find((e) => e.id === resumable.examId) : undefined;
 
-  const published = exams.filter((e) => e.published);
+  /* الطالب يرى اختبارات جامعته والاختبارات المشتركة فقط */
+  const published = exams.filter(
+    (e) => e.published && (e.university === "" || e.university === user.university)
+  );
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? (lang === "ar" ? "صباح الخير" : "Good morning") : hour < 18 ? (lang === "ar" ? "مساء النور" : "Good afternoon") : (lang === "ar" ? "مساء الخير" : "Good evening");
@@ -228,6 +231,12 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                     <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${SUBJECTS[i % SUBJECTS.length].color}, #0E7C66)` }} />
                     <div className="flex flex-1 flex-col p-5">
                       <div className="flex flex-wrap gap-1.5">
+                        {exam.university && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amberx-100 px-2.5 py-1 text-xs font-bold text-amberx-600">
+                            <GradCapIcon size={12} />
+                            {bi(findUniversity(exam.university)?.name ?? { ar: exam.university, en: exam.university })}
+                          </span>
+                        )}
                         {exam.subjectIds.length === 0 ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-pine-900 px-2.5 py-1 text-xs font-semibold text-pulse-300">
                             <LayersIcon size={12} /> {t("all_subjects")}

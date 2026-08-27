@@ -103,6 +103,7 @@ export default function StressTest({ questions, exams }: { questions: Question[]
       id: "stress-synthetic",
       title: { ar: "محاكاة شاملة للبنك", en: "Full-bank simulation" },
       description: { ar: "", en: "" },
+      university: "",
       subjectIds: [],
       questionIds: [],
       questionTypes: ["mcq", "tf", "fill", "case"],

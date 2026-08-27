@@ -370,6 +370,23 @@ const STR: Record<string, BiText> = {
   stress_verdict_ok: { ar: "ممتاز — خط المعالجة يتحمل الحمل بسهولة", en: "Excellent — the pipeline handles the load with ease" },
   stress_verdict_mid: { ar: "جيد — الأداء مستقر تحت الضغط", en: "Good — performance is stable under pressure" },
   stress_verdict_bad: { ar: "يحتاج تحسينًا قبل النشر الواسع", en: "Needs optimization before wide rollout" },
+
+  // ── النطاقات الإدارية ──
+  exam_uni: { ar: "نطاق الجامعة", en: "University scope" },
+  shared_all_unis: { ar: "مشترك — كل الجامعات", en: "Shared — all universities" },
+  scope_label: { ar: "نطاق الرؤية", en: "Visibility scope" },
+  scope_all_depts: { ar: "كل أقسام الجامعة", en: "All university departments" },
+  scope_hint: { ar: "يحدده المالك فقط", en: "Set by the owner only" },
+  scope_none_warn: { ar: "لم يُحدد نطاقك بعد — لا تظهر لك بيانات الطلاب حتى يمنحك المالك جامعة.", en: "No scope assigned — student data stays hidden until the owner grants you a university." },
+  scope_you: { ar: "نطاقك الإشرافي", en: "Your supervision scope" },
+  dept_label: { ar: "القسم (اختياري)", en: "Department (optional)" },
+  hierarchy_label: { ar: "التسلسل الإداري", en: "Administrative hierarchy" },
+  hierarchy_hint: { ar: "المالك يرى كل شيء · مشرف الجامعة يرى جامعته فقط · مشرف القسم يرى قسمه فقط داخل جامعته.", en: "Owner sees everything · a university admin sees only their university · a department admin sees only their department within it." },
+
+  // ── التصدير (إضافات) ──
+  exp_ready: { ar: "ملفك جاهز", en: "Your file is ready" },
+  exp_download_now: { ar: "تنزيل الملف الآن", en: "Download file now" },
+  exp_scope_note: { ar: "تظهر لك فقط سجلات الطلاب ضمن نطاقك الإشرافي، ويضاف لكل صف عمود الجامعة والكلية والقسم والمرحلة.", en: "You only see records of students within your supervision scope; each row includes university, college, department and level columns." },
 };
 
 interface I18nCtx {

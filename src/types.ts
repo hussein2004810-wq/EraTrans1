@@ -52,6 +52,8 @@ export interface ExamDef {
   id: string;
   title: BiText;
   description: BiText;
+  /** نطاق الجامعة — فارغ = مشترك لكل الجامعات */
+  university: string;
   /** مقررات الاختبار — فارغة = كل المقررات */
   subjectIds: SubjectId[];
   /** اختيار يدوي لأسئلة محددة (إذا امتلأت تتجاهل العدد والتصفية) */
@@ -107,6 +109,10 @@ export interface Account {
   /** صلاحيات المشرف (المالك يملك كل شيء ضمناً) */
   perms?: PermKey[];
   createdAt: number;
+  /** نطاق رؤية المشرف — يحدده المالك فقط: جامعة محددة، وفارغ = بلا نطاق */
+  scopeUniversity?: string;
+  /** قسم محدد داخل الجامعة — فارغ = كل أقسام الجامعة */
+  scopeDept?: string;
 }
 
 /** قيد في سجل التدقيق — يراه مالك المنصة (ومن مُنح صلاحية audit) */

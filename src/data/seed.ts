@@ -362,6 +362,7 @@ export const QUESTIONS_SEED: Question[] = [
 export const EXAMS_SEED: ExamDef[] = [
   {
     id: "ex-comp",
+    university: "baghdad",
     title: { ar: "الامتحان التجريبي الشامل", en: "Comprehensive Mock Exam" },
     description: {
       ar: "محاكاة لامتحان المجموعة الطبية: يغطي المقررات الستة بأنماط متنوعة من الأسئلة مع خصم درجات.",
@@ -383,6 +384,7 @@ export const EXAMS_SEED: ExamDef[] = [
   },
   {
     id: "ex-anps",
+    university: "",
     title: { ar: "اختبار التشريح ووظائف الأعضاء", en: "Anatomy & Physiology Test" },
     description: {
       ar: "اختبار مركز على مقرري التشريح ووظائف الأعضاء بلا خصم — مناسب للمراجعة الأولى.",
@@ -404,6 +406,7 @@ export const EXAMS_SEED: ExamDef[] = [
   },
   {
     id: "ex-pm",
+    university: "basrah",
     title: { ar: "اختبار سريع: علم الأدوية", en: "Quick Quiz: Pharmacology" },
     description: {
       ar: "جرعة سريعة من أسئلة الأدوية مع خصم صارم — درّب دقتك قبل الحفظ.",
@@ -436,14 +439,27 @@ export const OWNER_SEED: Account = {
   createdAt: Date.now() - 86400000 * 30,
 };
 
-/** مشرف مُرقّى من مالك المنصة — بصلاحيات ممنوحة */
+/** مشرف جامعة بغداد — يرى طلاب جامعته فقط */
 export const ADMIN_SEED: Account = {
   name: "د. خالد المنصور",
   email: "admin@kiur.edu",
   password: "kiur2024",
   role: "admin",
   perms: ["exams", "questions", "images", "import", "students", "reports", "export"],
+  scopeUniversity: "baghdad",
   createdAt: Date.now() - 86400000 * 10,
+};
+
+/** مشرفة قسم الأشعة في جامعة الموصل — ترى قسمها فقط داخل جامعتها */
+export const ADMIN2_SEED: Account = {
+  name: "د. زينب الحيالي",
+  email: "admin2@kiur.edu",
+  password: "kiur2024",
+  role: "admin",
+  perms: ["students", "reports", "export"],
+  scopeUniversity: "mosul",
+  scopeDept: "radiology",
+  createdAt: Date.now() - 86400000 * 7,
 };
 
 export const ACCOUNTS_SEED: Account[] = [
@@ -481,7 +497,30 @@ export const ACCOUNTS_SEED: Account[] = [
     year: "4",
     createdAt: Date.now() - 86400000 * 4,
   },
+  {
+    name: "ليث الراوي",
+    email: "laith@kiur.edu",
+    password: "123456",
+    role: "student",
+    university: "mosul",
+    college: "medicine",
+    department: "radiology",
+    year: "5",
+    createdAt: Date.now() - 86400000 * 3,
+  },
+  {
+    name: "Noor Al-Tamimi",
+    email: "noor@kiur.edu",
+    password: "123456",
+    role: "student",
+    university: "mosul",
+    college: "medicine",
+    department: "anesthesia",
+    year: "4",
+    createdAt: Date.now() - 86400000 * 3,
+  },
   OWNER_SEED,
+  ADMIN2_SEED,
 ];
 
 /** محاكاة محاولة طالب على اختبار لملء السجل عند أول تشغيل */
@@ -543,6 +582,8 @@ export const ATTEMPTS_SEED: Attempt[] = [
   mockAttempt(EXAMS_SEED[0], QUESTIONS_SEED, ACCOUNTS_SEED[2], 2, Date.now() - 86400000 * 1.4),
   mockAttempt(EXAMS_SEED[1], QUESTIONS_SEED, ACCOUNTS_SEED[1], 3, Date.now() - 86400000 * 0.8),
   mockAttempt(EXAMS_SEED[2], QUESTIONS_SEED, ACCOUNTS_SEED[3], 0, Date.now() - 3600000 * 5),
+  mockAttempt(EXAMS_SEED[0], QUESTIONS_SEED, ACCOUNTS_SEED[4], 4, Date.now() - 86400000 * 1.1),
+  mockAttempt(EXAMS_SEED[1], QUESTIONS_SEED, ACCOUNTS_SEED[5], 5, Date.now() - 3600000 * 20),
 ];
 
 /* لمحات سريرية للوحة الطالب */

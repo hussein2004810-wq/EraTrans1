@@ -31,6 +31,18 @@ export const COLLEGES: College[] = [
       D("peds", "طب الأطفال", "Pediatrics"),
       D("obgyn", "النسائية والتوليد", "Obstetrics & Gynecology"),
       D("fam", "طب الأسرة", "Family Medicine"),
+      D("radiology", "الأشعة والسونار", "Radiology & Ultrasound"),
+      D("anesthesia", "التخدير والعناية المركزة", "Anesthesia & Critical Care"),
+      D("psychiatry", "الطب النفسي", "Psychiatry"),
+      D("dermatology", "الجلدية", "Dermatology"),
+      D("ent", "الأنف والأذن والحنجرة", "ENT"),
+      D("ophthalmology", "العيون", "Ophthalmology"),
+      D("orthopedics", "العظام والكسور", "Orthopedics"),
+      D("urology", "المسالك البولية", "Urology"),
+      D("neurosurgery", "جراحة الجملة العصبية", "Neurosurgery"),
+      D("pathomed", "الأمراض والطب العدلي", "Pathology & Forensic Medicine"),
+      D("microbmed", "الأحياء المجهرية الطبية", "Medical Microbiology"),
+      D("commmed", "طب المجتمع", "Community Medicine"),
     ],
   },
   {
@@ -108,6 +120,14 @@ export const UNIVERSITIES: University[] = [
   { id: "salah", name: { ar: "جامعة صلاح الدين", en: "Salahaddin University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
   { id: "babylon", name: { ar: "جامعة بابل", en: "University of Babylon" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "medtech"] },
   { id: "thiqar", name: { ar: "جامعة ذي قار", en: "Thi-Qar University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
+  { id: "tikrit", name: { ar: "جامعة تكريت", en: "Tikrit University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "vet"] },
+  { id: "kirkuk", name: { ar: "جامعة كركوك", en: "University of Kirkuk" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
+  { id: "diyala", name: { ar: "جامعة ديالى", en: "Diyala University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "vet"] },
+  { id: "qadisiyah", name: { ar: "جامعة القادسية", en: "University of Al-Qadisiyah" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "vet"] },
+  { id: "misan", name: { ar: "جامعة ميسان", en: "Misan University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
+  { id: "muthanna", name: { ar: "جامعة المثنى", en: "University of Muthanna" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
+  { id: "wasit", name: { ar: "جامعة واسط", en: "University of Wasit" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
+  { id: "karbala", name: { ar: "جامعة كربلاء", en: "University of Karbala" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "medtech"] },
 ];
 
 /* ───────── دوال مساعدة ───────── */
@@ -130,4 +150,21 @@ export function yearOptions(collegeId?: string): string[] {
   const c = findCollege(collegeId);
   const n = c?.maxYears ?? 6;
   return Array.from({ length: n }, (_, i) => String(i + 1));
+}
+
+/** أقسام جامعة محددة مجمّعة حسب الكلية — لقوائم نطاق الإشراف */
+export function universityDepts(uniId: string): { collegeId: string; collegeName: BiText; depts: Dept[] }[] {
+  return collegesOf(uniId)
+    .filter((c) => c.depts.length > 0)
+    .map((c) => ({ collegeId: c.id, collegeName: c.name, depts: c.depts }));
+}
+
+/** البحث عن قسم داخل جامعة (عبر كلياتها) */
+export function findDeptInUniversity(uniId?: string, deptId?: string): { dept: Dept; college: College } | undefined {
+  if (!uniId || !deptId) return undefined;
+  for (const c of collegesOf(uniId)) {
+    const d = c.depts.find((x) => x.id === deptId);
+    if (d) return { dept: d, college: c };
+  }
+  return undefined;
 }

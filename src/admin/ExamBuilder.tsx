@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import type { Attempt, ExamDef, Question, QType, SubjectId } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
+import { UNIVERSITIES, findUniversity } from "../data/hierarchy";
 import { uid } from "../lib/store";
 import { effectiveCount } from "../student/StudentDashboard";
 import { EmptyState, Modal, SubjectTag, Toggle, TypeBadge, formatDate } from "../components/ui";
 import {
-  CheckIcon, ClipboardIcon, ClockIcon, EditIcon, EyeIcon, LayersIcon,
+  CheckIcon, ClipboardIcon, ClockIcon, EditIcon, EyeIcon, GradCapIcon, LayersIcon,
   PlusIcon, RefreshIcon, SaveIcon, SearchIcon, TargetIcon, TrashIcon, XIcon,
 } from "../components/icons";
 
@@ -18,9 +19,11 @@ interface Props {
   attempts: Attempt[];
   onSave: (e: ExamDef) => void;
   onDelete: (id: string) => void;
+  /** للمشرف ذي النطاق: تُقفل الاختبارات على جامعته (null = المالك حر) */
+  lockedUniversity?: string | null;
 }
 
-export default function ExamBuilder({ exams, questions, attempts, onSave, onDelete }: Props) {
+export default function ExamBuilder({ exams, questions, attempts, onSave, onDelete, lockedUniversity = null }: Props) {
   const { t, bi, lang } = useI18n();
   const [draft, setDraft] = useState<ExamDef | null>(null);
   const [toDelete, setToDelete] = useState<ExamDef | null>(null);
@@ -29,6 +32,7 @@ export default function ExamBuilder({ exams, questions, attempts, onSave, onDele
     id: uid("ex-"),
     title: { ar: "", en: "" },
     description: { ar: "", en: "" },
+    university: lockedUniversity ?? "",
     subjectIds: [],
     questionIds: [],
     questionTypes: ["mcq", "tf", "fill", "case"],
@@ -50,6 +54,7 @@ export default function ExamBuilder({ exams, questions, attempts, onSave, onDele
         <ExamForm
           initial={draft}
           questions={questions}
+          lockedUniversity={lockedUniversity}
           onCancel={() => setDraft(null)}
           onSave={(e) => {
             onSave(e);
@@ -90,6 +95,20 @@ export default function ExamBuilder({ exams, questions, attempts, onSave, onDele
                     <p className="mt-1 line-clamp-2 text-sm text-ink-soft">{bi(exam.description)}</p>
 
                     <div className="mt-3 flex flex-wrap gap-1.5">
+                      <span
+                        className={
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold " +
+                          (exam.university
+                            ? "bg-amberx-100 text-amberx-600"
+                            : "border border-line bg-white text-ink-soft")
+                        }
+                        title={t("exam_uni")}
+                      >
+                        <GradCapIcon size={11} />
+                        {exam.university
+                          ? bi(findUniversity(exam.university)?.name ?? { ar: exam.university, en: exam.university })
+                          : t("shared_all_unis")}
+                      </span>
                       {exam.subjectIds.length === 0 ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-pine-900 px-2 py-0.5 text-[11px] font-semibold text-pulse-300">
                           <LayersIcon size={11} /> {t("all_subjects")}
@@ -165,11 +184,13 @@ function ExamForm({
   questions,
   onSave,
   onCancel,
+  lockedUniversity = null,
 }: {
   initial: ExamDef;
   questions: Question[];
   onSave: (e: ExamDef) => void;
   onCancel: () => void;
+  lockedUniversity?: string | null;
 }) {
   const { t, bi } = useI18n();
   const [d, setD] = useState<ExamDef>(initial);
@@ -232,6 +253,26 @@ function ExamForm({
         <div>
           <label className="lbl">{t("desc_en")}</label>
           <textarea className="input min-h-20" dir="ltr" value={d.description.en} onChange={(e) => set("description", { ...d.description, en: e.target.value })} />
+        </div>
+        <div className="md:col-span-2">
+          <label className="lbl">
+            <GradCapIcon size={13} className="me-1 inline text-pulse-600" />
+            {t("exam_uni")}
+            {lockedUniversity && <span className="ms-2 text-[10px] font-bold text-amberx-600">({t("scope_hint")})</span>}
+          </label>
+          <select
+            className="input"
+            value={d.university}
+            disabled={!!lockedUniversity}
+            onChange={(e) => set("university", e.target.value)}
+          >
+            <option value="">{t("shared_all_unis")}</option>
+            {UNIVERSITIES.map((u) => (
+              <option key={u.id} value={u.id}>
+                {bi(u.name)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
