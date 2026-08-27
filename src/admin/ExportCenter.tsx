@@ -266,13 +266,22 @@ export default function ExportCenter({ exams, attempts, accounts }: Props) {
             <p className="mt-1.5 text-sm text-ink-soft">
               <b className="text-ink" dir="ltr">{file.filename}</b> · {file.sizeKB} KB · {rows.length} {t("exp_rows")}
             </p>
+            <p className="mt-1 text-xs text-ink-soft/80">{t("exp_click_hint")}</p>
             <a
-              href={file.url}
+              href={file.dataUri}
               download={file.filename}
-              className="btn-primary mt-5 inline-flex w-full items-center justify-center gap-2 py-3 text-base no-underline"
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 py-3 text-base no-underline"
             >
               <DownloadIcon size={18} /> {t("exp_download_now")}
             </a>
+            <button
+              onClick={() => window.open(file.dataUri, "_blank", "noopener")}
+              className="btn-ghost mt-2 inline-flex w-full items-center justify-center gap-2"
+            >
+              <FileIcon size={15} /> {t("exp_open_tab")}
+            </button>
             <button onClick={() => setFile(null)} className="btn-ghost mt-2 w-full">
               {t("close")}
             </button>

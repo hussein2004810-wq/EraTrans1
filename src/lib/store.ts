@@ -9,6 +9,7 @@ export const KEYS = {
   sessions: "kiur.sessions.v2",
   images: "kiur.images.v2",
   audit: "kiur.audit.v2",
+  universities: "kiur.universities.v2",
   user: "kiur.user.v2",
   lang: "kiur.lang.v2",
 } as const;

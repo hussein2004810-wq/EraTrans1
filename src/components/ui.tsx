@@ -1,9 +1,10 @@
 import { createPortal } from "react-dom";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { BiText, QType } from "../types";
 import { useI18n } from "../i18n";
 import { subjectById } from "../data/seed";
 import type { SubjectId } from "../types";
+import { CheckIcon, ChevronDownIcon, SearchIcon } from "./icons";
 
 export function Modal({
   open,
@@ -33,6 +34,120 @@ export function Modal({
 
 export function PrintPortal({ children }: { children: ReactNode }) {
   return createPortal(<div className="print-only-host">{children}</div>, document.body);
+}
+
+export interface SearchOpt {
+  value: string;
+  label: string;
+  sub?: string;
+}
+
+/** قائمة اختيار قابلة للبحث — للجامعات والأقسام */
+export function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  searchPlaceholder,
+  disabled = false,
+}: {
+  options: SearchOpt[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  searchPlaceholder: string;
+  disabled?: boolean;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = options.find((o) => o.value === value);
+  const filtered = options.filter(
+    (o) =>
+      q.trim() === "" ||
+      o.label.toLowerCase().includes(q.trim().toLowerCase()) ||
+      (o.sub ?? "").toLowerCase().includes(q.trim().toLowerCase())
+  );
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 30);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="input flex w-full items-center justify-between gap-2 text-start disabled:opacity-50"
+      >
+        <span className={selected ? "truncate" : "truncate text-ink-soft/70"}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDownIcon
+          size={16}
+          className={"shrink-0 text-ink-soft transition-transform duration-200 " + (open ? "rotate-180" : "")}
+        />
+      </button>
+
+      {open && (
+        <div className="anim-pop absolute z-40 mt-1.5 w-full overflow-hidden rounded-xl border border-line bg-white shadow-xl shadow-pine-950/15">
+          <div className="relative border-b border-line bg-paper/60">
+            <SearchIcon size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-soft/60" />
+            <input
+              ref={inputRef}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full border-0 bg-transparent py-2.5 pe-3 ps-9 text-sm outline-none placeholder:text-ink-soft/50"
+            />
+          </div>
+          <ul className="max-h-56 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <li className="px-4 py-3 text-center text-xs text-ink-soft">{t("no_options")}</li>
+            ) : (
+              filtered.map((o) => {
+                const on = o.value === value;
+                return (
+                  <li key={o.value}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange(o.value);
+                        setOpen(false);
+                        setQ("");
+                      }}
+                      className={
+                        "flex w-full items-center gap-2 px-3.5 py-2.5 text-start text-sm transition-colors " +
+                        (on ? "bg-pulse-100 font-bold text-pulse-700" : "hover:bg-paper")
+                      }
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{o.label}</span>
+                        {o.sub && <span className="block truncate text-[11px] text-ink-soft">{o.sub}</span>}
+                      </span>
+                      {on && <CheckIcon size={15} className="shrink-0 text-pulse-600" />}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SubjectTag({ id, small = false }: { id: SubjectId; small?: boolean }) {

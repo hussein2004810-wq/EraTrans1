@@ -1,22 +1,50 @@
 export interface ExportFile {
   blob: Blob;
   url: string;
+  /** رابط Data URI بترميز base64 — الطريقة الأكثر موثوقية للتنزيل في بيئات العرض المحمية */
+  dataUri: string;
   filename: string;
   sizeKB: number;
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10);
 
-function wrap(blob: Blob, filename: string): ExportFile {
+/* ── ترميز base64 آمن للنصوص والبايتات ── */
+function uint8ToBase64(u8: Uint8Array): string {
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < u8.length; i += chunk) {
+    bin += String.fromCharCode(...u8.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+function stringToBase64(str: string): string {
+  return uint8ToBase64(new TextEncoder().encode(str));
+}
+
+function wrapBytes(bytes: Uint8Array, mime: string, filename: string): ExportFile {
+  const blob = new Blob([bytes as unknown as BlobPart], { type: mime });
   return {
     blob,
     url: URL.createObjectURL(blob),
+    dataUri: `data:${mime};base64,${uint8ToBase64(bytes)}`,
     filename,
     sizeKB: Math.max(0.1, Math.round((blob.size / 1024) * 10) / 10),
   };
 }
 
-/** تجهيز ملف Excel (.xlsx) — يُنزَّل عبر رابط صريح في الواجهة */
+function wrapString(str: string, mime: string, filename: string): ExportFile {
+  const blob = new Blob(["\ufeff", str], { type: mime });
+  return {
+    blob,
+    url: URL.createObjectURL(blob),
+    dataUri: `data:${mime};base64,${stringToBase64("\ufeff" + str)}`,
+    filename,
+    sizeKB: Math.max(0.1, Math.round((blob.size / 1024) * 10) / 10),
+  };
+}
+
+/** تجهيز ملف Excel (.xlsx) */
 export async function buildExcelFile(
   headers: string[],
   rows: (string | number)[][],
@@ -31,10 +59,11 @@ export async function buildExcelFile(
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "KIUR");
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([out], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  return wrap(blob, `${baseName}-${stamp()}.xlsx`);
+  return wrapBytes(
+    new Uint8Array(out),
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    `${baseName}-${stamp()}.xlsx`
+  );
 }
 
 /** تجهيز ملف Word (.doc) بجدول RTL منسّق */
@@ -53,11 +82,13 @@ export function buildWordFile(
     .map(
       (r, ri) =>
         `<tr style="background:${ri % 2 ? "#f2f6f4" : "#ffffff"}">` +
-        r.map((v, ci) =>
-          ci === 0
-            ? `<td style="padding:6px 10px;border:1px solid #cdd8d2;font-size:12px;font-weight:bold">${esc(v)}</td>`
-            : `<td style="padding:6px 10px;border:1px solid #cdd8d2;font-size:12px">${esc(v)}</td>`
-        ).join("") +
+        r
+          .map((v, ci) =>
+            ci === 0
+              ? `<td style="padding:6px 10px;border:1px solid #cdd8d2;font-size:12px;font-weight:bold">${esc(v)}</td>`
+              : `<td style="padding:6px 10px;border:1px solid #cdd8d2;font-size:12px">${esc(v)}</td>`
+          )
+          .join("") +
         "</tr>"
     )
     .join("");
@@ -73,6 +104,5 @@ export function buildWordFile(
 <p style="margin-top:20px;color:#8aa097;font-size:11px">أُنشئ بواسطة منصة KIUR لاختبارات المجموعة الطبية · ${esc(new Date().toLocaleString("ar-EG"))}</p>
 </body></html>`;
 
-  const blob = new Blob(["\ufeff", html], { type: "application/msword" });
-  return wrap(blob, `${baseName}-${stamp()}.doc`);
+  return wrapString(html, "application/msword", `${baseName}-${stamp()}.doc`);
 }

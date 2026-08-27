@@ -1,4 +1,4 @@
-import type { BiText } from "../types";
+import type { BiText, CustomUniversity } from "../types";
 
 export interface Dept {
   id: string;
@@ -130,10 +130,26 @@ export const UNIVERSITIES: University[] = [
   { id: "karbala", name: { ar: "جامعة كربلاء", en: "University of Karbala" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "medtech"] },
 ];
 
+/* ───────── الجامعات المخصصة (يضيفها المالك) ───────── */
+
+let _customUnis: CustomUniversity[] = [];
+
+export function registerCustomUniversities(list: CustomUniversity[]) {
+  _customUnis = list;
+}
+
+/** كل الجامعات: الثابتة + المخصصة */
+export function allUniversities(): University[] {
+  return [
+    ...UNIVERSITIES,
+    ..._customUnis.map((u) => ({ id: u.id, name: u.name, collegeIds: u.collegeIds })),
+  ];
+}
+
 /* ───────── دوال مساعدة ───────── */
 
 export function findUniversity(id?: string): University | undefined {
-  return UNIVERSITIES.find((u) => u.id === id);
+  return allUniversities().find((u) => u.id === id);
 }
 export function findCollege(id?: string): College | undefined {
   return COLLEGES.find((c) => c.id === id);

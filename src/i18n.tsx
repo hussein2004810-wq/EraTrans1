@@ -387,6 +387,51 @@ const STR: Record<string, BiText> = {
   exp_ready: { ar: "ملفك جاهز", en: "Your file is ready" },
   exp_download_now: { ar: "تنزيل الملف الآن", en: "Download file now" },
   exp_scope_note: { ar: "تظهر لك فقط سجلات الطلاب ضمن نطاقك الإشرافي، ويضاف لكل صف عمود الجامعة والكلية والقسم والمرحلة.", en: "You only see records of students within your supervision scope; each row includes university, college, department and level columns." },
+  exp_click_hint: { ar: "اضغط الزر أدناه لبدء التنزيل مباشرة على جهازك.", en: "Press the button below to start the download directly to your device." },
+  exp_open_tab: { ar: "فتح في نافذة جديدة", en: "Open in new tab" },
+
+  // ── الألقاب الأكاديمية ──
+  role_head: { ar: "رئيس قسم", en: "Head of Department" },
+  role_coordinator: { ar: "مقرر قسم", en: "Department Coordinator" },
+  role_doctor: { ar: "دكتور", en: "Doctor / Lecturer" },
+  role_professor: { ar: "أستاذ جامعي", en: "University Professor" },
+  admin_role_plain: { ar: "مشرف عام", en: "General Admin" },
+  academic_roles: { ar: "حساب أكاديمي بدور محدد", en: "Academic account with a role" },
+  academic_hint: { ar: "أنشئ حسابًا بلقب أكاديمي داخل قسم، مع صلاحيات افتراضية لكل دور يمكنك تعديلها.", en: "Create an account with an academic title inside a department, with default permissions per role that you can adjust." },
+  select_role: { ar: "اختر الدور الأكاديمي", en: "Choose the academic role" },
+  role_perms_note: { ar: "الصلاحيات أدناه مقترحة حسب الدور — عدّلها قبل الحفظ.", en: "The permissions below are suggested by the role — adjust before saving." },
+  uni_scope_req: { ar: "الجامعة (إلزامي)", en: "University (required)" },
+  dept_scope_opt: { ar: "القسم (اختياري — اتركه فارغًا لكل أقسام الجامعة)", en: "Department (optional — leave empty for all departments)" },
+
+  // ── الجامعات ──
+  universities_tab: { ar: "الجامعات", en: "Universities" },
+  universities_hint: { ar: "أضف جامعات جديدة يدويًا واختر الكليات الطبية التي تحتويها. تظهر فورًا في تسجيل الطلاب ومنح نطاقات المشرفين.", en: "Manually add new universities and pick the medical colleges they contain. They appear immediately in student registration and admin scope grants." },
+  add_university: { ar: "إضافة جامعة", en: "Add university" },
+  uni_name_ar: { ar: "اسم الجامعة (عربي)", en: "University name (Arabic)" },
+  uni_name_en: { ar: "اسم الجامعة (إنجليزي)", en: "University name (English)" },
+  uni_colleges: { ar: "الكليات الطبية التي تحتويها", en: "Medical colleges it contains" },
+  uni_created: { ar: "تمت إضافة الجامعة ✓", en: "University added ✓" },
+  uni_exists: { ar: "توجد جامعة بهذا الاسم أو المعرف مسبقًا", en: "A university with this name or id already exists" },
+  uni_required: { ar: "أدخل اسم الجامعة بالعربية والإنجليزية واختر كلية واحدة على الأقل", en: "Enter the university name in Arabic & English and pick at least one college" },
+  perm_universities: { ar: "إدارة الجامعات", en: "Manage universities" },
+  custom_badge: { ar: "مخصصة", en: "Custom" },
+  n_unis: { ar: "جامعة", en: "universities" },
+
+  // ── سجل الحسابات ──
+  accounts_log_tab: { ar: "سجل الحسابات", en: "Accounts Log" },
+  accounts_log_hint: { ar: "كل بيانات تسجيل الدخول والحسابات المنشأة في المنصة — يراه المالك ومن يمنحه هذه الصلاحية فقط.", en: "All login credentials and created accounts — visible only to the owner and those he grants." },
+  accounts_log_note: { ar: "مشاركة كلمات المرور مسؤولية المالك وحده.", en: "Sharing passwords is the owner's responsibility alone." },
+  perm_accounts_log: { ar: "رؤية سجل الحسابات", en: "View accounts log" },
+  col_password: { ar: "كلمة المرور", en: "Password" },
+  col_title: { ar: "اللقب", en: "Title" },
+  show_hide: { ar: "إظهار/إخفاء", en: "Show/Hide" },
+  account_count: { ar: "حساب", en: "accounts" },
+
+  // ── البحث ──
+  search_uni: { ar: "ابحث عن جامعة...", en: "Search university..." },
+  search_dept: { ar: "ابحث عن قسم...", en: "Search department..." },
+  search_any: { ar: "ابحث...", en: "Search..." },
+  no_options: { ar: "لا نتائج", en: "No matches" },
 };
 
 interface I18nCtx {

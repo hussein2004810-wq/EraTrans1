@@ -82,6 +82,9 @@ export interface ExamDef {
 
 export type Role = "student" | "admin" | "owner";
 
+/** اللقب الأكاديمي للمشرف داخل قسمه */
+export type AdminTitle = "head" | "coordinator" | "doctor" | "professor";
+
 /** صلاحيات إشرافية قابلة للتمنح من مالك المنصة */
 export type PermKey =
   | "exams"
@@ -91,11 +94,31 @@ export type PermKey =
   | "students"
   | "reports"
   | "export"
-  | "audit";
+  | "audit"
+  | "universities"
+  | "accountsLog";
 
 export const ALL_PERMS: PermKey[] = [
   "exams", "questions", "images", "import", "students", "reports", "export", "audit",
+  "universities", "accountsLog",
 ];
+
+/** صلاحيات افتراضية لكل لقب أكاديمي (يعدّلها المالك) */
+export const TITLE_DEFAULT_PERMS: Record<AdminTitle, PermKey[]> = {
+  head: ["exams", "questions", "images", "import", "students", "reports", "export", "audit"],
+  coordinator: ["exams", "questions", "students", "reports", "export"],
+  doctor: ["questions", "students", "reports"],
+  professor: ["questions", "exams", "reports"],
+};
+
+/** جامعة يضيفها المالك يدويًا */
+export interface CustomUniversity {
+  id: string;
+  name: BiText;
+  collegeIds: string[];
+  custom: true;
+  createdAt: number;
+}
 
 export interface Account {
   name: string;
@@ -113,6 +136,8 @@ export interface Account {
   scopeUniversity?: string;
   /** قسم محدد داخل الجامعة — فارغ = كل أقسام الجامعة */
   scopeDept?: string;
+  /** اللقب الأكاديمي للمشرف (رئيس قسم، مقرر، دكتور، أستاذ) */
+  adminTitle?: AdminTitle;
 }
 
 /** قيد في سجل التدقيق — يراه مالك المنصة (ومن مُنح صلاحية audit) */

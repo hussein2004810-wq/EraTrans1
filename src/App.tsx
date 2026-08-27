@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
-  Account, Attempt, AuditEntry, ExamDef, ExamResult, Lang, Question, SavedSession,
+  Account, Attempt, AuditEntry, CustomUniversity, ExamDef, ExamResult, Lang, Question, SavedSession,
 } from "./types";
 import {
   ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED,
 } from "./data/seed";
 import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
+import { registerCustomUniversities } from "./data/hierarchy";
 import { I18nProvider } from "./i18n";
 import Auth from "./components/Auth";
 import StudentDashboard from "./student/StudentDashboard";
@@ -41,6 +42,13 @@ export default function App() {
   const [attempts, setAttempts] = useState<Attempt[]>(() => initOnce(KEYS.attempts, ATTEMPTS_SEED));
   const [sessions, setSessions] = useState<SavedSession[]>(() => load(KEYS.sessions, [] as SavedSession[]));
   const [audit, setAudit] = useState<AuditEntry[]>(() => load(KEYS.audit, [] as AuditEntry[]));
+  const [customUnis, setCustomUnis] = useState<CustomUniversity[]>(() => load(KEYS.universities, [] as CustomUniversity[]));
+
+  /* تسجيل الجامعات المخصصة في نظام التسلسل لتظهر فورًا في كل القوائم */
+  useEffect(() => {
+    registerCustomUniversities(customUnis);
+    save(KEYS.universities, customUnis);
+  }, [customUnis]);
   const [user, setUser] = useState<Account | null>(() => {
     const email = load<string | null>(KEYS.user, null);
     if (!email) return null;
@@ -274,6 +282,17 @@ export default function App() {
     if (gone) logAudit("update", "admin", gone.name, "demote → student");
   };
 
+  /* ── الجامعات المخصصة ── */
+  const addUniversity = (u: CustomUniversity) => {
+    setCustomUnis((prev) => [...prev, u]);
+    logAudit("create", "admin", u.name.ar, `university · ${u.collegeIds.length} colleges`);
+  };
+  const deleteUniversity = (id: string) => {
+    const gone = customUnis.find((u) => u.id === id);
+    setCustomUnis((prev) => prev.filter((u) => u.id !== id));
+    if (gone) logAudit("delete", "admin", gone.name.ar, "university");
+  };
+
   const authStats = useMemo(
     () => ({
       questions: questions.length,
@@ -329,6 +348,9 @@ export default function App() {
         attempts={attempts}
         accounts={accounts}
         audit={audit}
+        customUniversities={customUnis}
+        onAddUniversity={addUniversity}
+        onDeleteUniversity={deleteUniversity}
         onSaveExam={saveExam}
         onDeleteExam={deleteExam}
         onSaveQuestion={saveQuestion}

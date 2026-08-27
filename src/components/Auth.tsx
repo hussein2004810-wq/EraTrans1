@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Account } from "../types";
 import { useI18n } from "../i18n";
-import { UNIVERSITIES, collegesOf, findCollege, yearOptions } from "../data/hierarchy";
+import { allUniversities, collegesOf, findCollege, yearOptions } from "../data/hierarchy";
 import EcgLine from "./EcgLine";
-import { KiurWordmark, LangSwitch } from "./ui";
-import { ClipboardIcon, CrownIcon, GradCapIcon, HeartPulseIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
+import { KiurWordmark, LangSwitch, SearchableSelect } from "./ui";
+import { ClipboardIcon, GradCapIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
 
 interface AuthProps {
   accounts: Account[];
@@ -66,13 +66,6 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
       });
       if (err) fail(t(err));
     }
-  };
-
-  const fill = (em: string, pw: string) => {
-    setMode("login");
-    setEmail(em);
-    setPassword(pw);
-    setError(null);
   };
 
   return (
@@ -189,21 +182,18 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 <div className="anim-fade-up grid grid-cols-2 gap-3">
                   <div>
                     <label className="lbl">{t("university_col")} ★</label>
-                    <select
-                      className="input"
+                    <SearchableSelect
+                      options={allUniversities().map((u) => ({ value: u.id, label: bi(u.name), sub: u.id }))}
                       value={university}
-                      onChange={(e) => {
-                        setUniversity(e.target.value);
+                      onChange={(v) => {
+                        setUniversity(v);
                         setCollege("");
                         setDepartment("");
                         setYear("1");
                       }}
-                    >
-                      <option value="">{t("select_hint")}</option>
-                      {UNIVERSITIES.map((u) => (
-                        <option key={u.id} value={u.id}>{bi(u.name)}</option>
-                      ))}
-                    </select>
+                      placeholder={t("select_hint")}
+                      searchPlaceholder={t("search_uni")}
+                    />
                   </div>
                   <div>
                     <label className="lbl">{t("college")} ★</label>
@@ -225,17 +215,14 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                   </div>
                   <div>
                     <label className="lbl">{t("department_col")}</label>
-                    <select
-                      className="input"
+                    <SearchableSelect
+                      options={(curCollege?.depts ?? []).map((d) => ({ value: d.id, label: bi(d.name) }))}
                       value={department}
+                      onChange={setDepartment}
+                      placeholder={t("general_dept")}
+                      searchPlaceholder={t("search_dept")}
                       disabled={!college}
-                      onChange={(e) => setDepartment(e.target.value)}
-                    >
-                      <option value="">{t("general_dept")}</option>
-                      {(curCollege?.depts ?? []).map((d) => (
-                        <option key={d.id} value={d.id}>{bi(d.name)}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div>
                     <label className="lbl">{t("level_col")} ★</label>
@@ -259,51 +246,6 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 {mode === "login" ? t("signin") : t("create_account")}
               </button>
             </form>
-
-            <div className="mt-6 rounded-xl border border-pine-700/30 bg-pine-900 p-4">
-              <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-pulse-300/80">
-                <HeartPulseIcon size={14} />
-                {t("demo_accounts")}
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <button
-                  onClick={() => fill("hussein2004810@gmail.com", "kiur2024")}
-                  className="rounded-lg border border-amberx-500/40 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-amberx-500 hover:bg-pine-700"
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-amberx-500">
-                    <CrownIcon size={13} /> {t("owner_role")}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">hussein2004810@gmail.com</span>
-                </button>
-                <button
-                  onClick={() => fill("admin@kiur.edu", "kiur2024")}
-                  className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
-                    <ShieldIcon size={13} /> {t("admin_role")} · {t("university_col")}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">admin@kiur.edu / kiur2024</span>
-                </button>
-                <button
-                  onClick={() => fill("admin2@kiur.edu", "kiur2024")}
-                  className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
-                    <ShieldIcon size={13} /> {t("admin_role")} · {t("department_col")}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">admin2@kiur.edu / kiur2024</span>
-                </button>
-                <button
-                  onClick={() => fill("student@kiur.edu", "123456")}
-                  className="rounded-lg border border-pine-700 bg-pine-800 px-3 py-2 text-start transition-all duration-200 hover:border-pulse-500 hover:bg-pine-700"
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-pulse-300">
-                    <GradCapIcon size={13} /> {t("student_account")}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-pulse-300/80" dir="ltr">student@kiur.edu / 123456</span>
-                </button>
-              </div>
-            </div>
 
             <p className="mt-5 text-center text-xs text-ink-soft">
               {mode === "login" ? t("no_account_q") : t("have_account_q")}{" "}

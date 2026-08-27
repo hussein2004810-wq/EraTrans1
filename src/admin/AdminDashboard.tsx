@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, AuditEntry, ExamDef, PermKey, Question, SavedSession } from "../types";
+import type { Account, Attempt, AuditEntry, CustomUniversity, ExamDef, PermKey, Question, SavedSession } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
 import { findCollege, findDept, findDeptInUniversity, findUniversity } from "../data/hierarchy";
@@ -12,14 +12,17 @@ import ExportCenter from "./ExportCenter";
 import AdminsPanel from "./AdminsPanel";
 import AuditLog from "./AuditLog";
 import StressTest from "./StressTest";
+import UniversitiesPanel from "./UniversitiesPanel";
+import AccountsLog from "./AccountsLog";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, LayersIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, KeyIcon, LayersIcon,
   LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 type Tab =
   | "overview" | "exams" | "questions" | "images" | "import"
-  | "students" | "reports" | "export" | "audit" | "admins" | "stress";
+  | "students" | "reports" | "export" | "audit" | "admins" | "stress"
+  | "universities" | "accountsLog";
 
 interface Props {
   user: Account;
@@ -28,6 +31,9 @@ interface Props {
   attempts: Attempt[];
   accounts: Account[];
   audit: AuditEntry[];
+  customUniversities: CustomUniversity[];
+  onAddUniversity: (u: CustomUniversity) => void;
+  onDeleteUniversity: (id: string) => void;
   onSaveExam: (e: ExamDef) => void;
   onDeleteExam: (id: string) => void;
   onSaveQuestion: (q: Question) => void;
@@ -72,6 +78,8 @@ export default function AdminDashboard(props: Props) {
     { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} />, show: has("reports") },
     { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} />, show: has("export") },
     { id: "audit", label: t("audit_tab"), icon: <EyeIcon size={16} />, show: has("audit") },
+    { id: "universities", label: t("universities_tab"), icon: <GradCapIcon size={16} />, show: has("universities") },
+    { id: "accountsLog", label: t("accounts_log_tab"), icon: <KeyIcon size={16} />, show: has("accountsLog") },
     { id: "stress", label: t("stress_tab"), icon: <GaugeIcon size={16} />, show: isOwner },
     { id: "admins", label: t("admins_tab"), icon: <CrownIcon size={16} />, show: isOwner },
   ];
@@ -200,6 +208,14 @@ export default function AdminDashboard(props: Props) {
           {activeTab === "reports" && <Reports exams={scopedExams} attempts={scopedAttempts} />}
           {activeTab === "export" && <ExportCenter exams={scopedExams} attempts={scopedAttempts} accounts={accounts} />}
           {activeTab === "audit" && <AuditLog entries={audit} />}
+          {activeTab === "universities" && (
+            <UniversitiesPanel
+              customUniversities={props.customUniversities}
+              onAdd={props.onAddUniversity}
+              onDelete={props.onDeleteUniversity}
+            />
+          )}
+          {activeTab === "accountsLog" && <AccountsLog accounts={accounts} />}
           {activeTab === "stress" && isOwner && <StressTest questions={questions} exams={exams} />}
           {activeTab === "admins" && isOwner && (
             <AdminsPanel
