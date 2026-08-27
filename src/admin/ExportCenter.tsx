@@ -3,7 +3,7 @@ import type { Account, Attempt, ExamDef } from "../types";
 import { useI18n } from "../i18n";
 import { fmtClock } from "../lib/store";
 import { findCollege, findDeptInUniversity, findUniversity } from "../data/hierarchy";
-import { buildExcelFile, buildWordFile, type ExportFile } from "../lib/exporter";
+import { buildExcelFile, buildWordFile, downloadFile, type ExportFile } from "../lib/exporter";
 import { EmptyState, Modal, formatDate } from "../components/ui";
 import { CheckIcon, DownloadIcon, FileIcon, InfoIcon, SheetIcon } from "../components/icons";
 
@@ -267,21 +267,20 @@ export default function ExportCenter({ exams, attempts, accounts }: Props) {
               <b className="text-ink" dir="ltr">{file.filename}</b> · {file.sizeKB} KB · {rows.length} {t("exp_rows")}
             </p>
             <p className="mt-1 text-xs text-ink-soft/80">{t("exp_click_hint")}</p>
+            <button
+              onClick={() => downloadFile(file)}
+              className="btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 py-3 text-base"
+            >
+              <DownloadIcon size={18} /> {t("exp_download_now")}
+            </button>
             <a
               href={file.dataUri}
               download={file.filename}
-              target="_blank"
               rel="noreferrer"
-              className="btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 py-3 text-base no-underline"
-            >
-              <DownloadIcon size={18} /> {t("exp_download_now")}
-            </a>
-            <button
-              onClick={() => window.open(file.dataUri, "_blank", "noopener")}
-              className="btn-ghost mt-2 inline-flex w-full items-center justify-center gap-2"
+              className="btn-ghost mt-2 inline-flex w-full items-center justify-center gap-2 no-underline"
             >
               <FileIcon size={15} /> {t("exp_open_tab")}
-            </button>
+            </a>
             <button onClick={() => setFile(null)} className="btn-ghost mt-2 w-full">
               {t("close")}
             </button>

@@ -432,6 +432,34 @@ const STR: Record<string, BiText> = {
   search_dept: { ar: "ابحث عن قسم...", en: "Search department..." },
   search_any: { ar: "ابحث...", en: "Search..." },
   no_options: { ar: "لا نتائج", en: "No matches" },
+
+  // ── لقب مشرف منصة ──
+  role_platform: { ar: "مشرف منصة", en: "Platform Supervisor" },
+
+  // ── اللمحات السريرية ──
+  perm_vignettes: { ar: "اللمحات السريرية", en: "Clinical vignettes" },
+  vignettes_tab: { ar: "اللمحات السريرية", en: "Clinical Vignettes" },
+  vignettes_hint: { ar: "لمحات سريرية قصيرة تنشرها للطلبة في واجهة المنصة. يحررها المشرفون الممنوحون، لكن النشر للطلبة قرار المالك وحده.", en: "Short clinical pearls you publish to students on the platform. Granted admins can edit, but publishing to students is the owner's decision alone." },
+  vignette_new: { ar: "لمحة جديدة", en: "New vignette" },
+  vignette_text_ar: { ar: "نص اللمحة (عربي)", en: "Vignette text (Arabic)" },
+  vignette_text_en: { ar: "نص اللمحة (إنجليزي)", en: "Vignette text (English)" },
+  vignette_published: { ar: "منشورة للطلبة", en: "Published to students" },
+  vignette_hidden: { ar: "مخفية", en: "Hidden" },
+  vignette_publish: { ar: "نشر للطلبة", en: "Publish to students" },
+  vignette_unpublish: { ar: "إخفاء عن الطلبة", en: "Hide from students" },
+  vignette_empty: { ar: "لا لمحات سريرية بعد — أضف أول لمحة", en: "No vignettes yet — add your first one" },
+  vignette_saved: { ar: "تم حفظ اللمحة ✓", en: "Vignette saved ✓" },
+  vignette_confirm_delete: { ar: "حذف هذه اللمحة السريرية؟", en: "Delete this clinical vignette?" },
+  vignette_owner_only_publish: { ar: "النشر للطلبة صلاحية مالك المنصة فقط", en: "Publishing to students is an owner-only capability" },
+  vignette_published_count: { ar: "منشورة", en: "published" },
+  vignette_author: { ar: "الكاتب", en: "Author" },
+  vignette_log: { ar: "سجل تعديل اللمحات", en: "Vignette edit log" },
+  vignette_log_hint: { ar: "سجل مستقل خاص باللمحات السريرية — لا يمس سجل التدقيق العام.", en: "A separate log dedicated to clinical vignettes — it does not touch the general audit log." },
+  va_create: { ar: "أضاف", en: "Created" },
+  va_update: { ar: "عدّل", en: "Updated" },
+  va_delete: { ar: "حذف", en: "Deleted" },
+  va_publish: { ar: "نشر", en: "Published" },
+  va_unpublish: { ar: "أخفى", en: "Unpublished" },
 };
 
 interface I18nCtx {

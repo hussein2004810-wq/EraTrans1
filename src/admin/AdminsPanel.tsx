@@ -6,7 +6,7 @@ import { uid } from "../lib/store";
 import { allUniversities, universityDepts, findDeptInUniversity, findUniversity } from "../data/hierarchy";
 import { EmptyState, Modal, SearchableSelect, formatDate } from "../components/ui";
 import {
-  CheckIcon, CrownIcon, GradCapIcon, PlusIcon, ShieldIcon, StethoIcon, TrashIcon, UsersIcon, XIcon,
+  CheckIcon, CrownIcon, GradCapIcon, LayersIcon, PlusIcon, ShieldIcon, StethoIcon, TrashIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 const PERM_LABEL: Record<PermKey, string> = {
@@ -20,20 +20,23 @@ const PERM_LABEL: Record<PermKey, string> = {
   audit: "perm_audit",
   universities: "perm_universities",
   accountsLog: "perm_accounts_log",
+  vignettes: "perm_vignettes",
 };
 
-const TITLES: AdminTitle[] = ["head", "coordinator", "doctor", "professor"];
+const TITLES: AdminTitle[] = ["head", "coordinator", "doctor", "professor", "platform"];
 const TITLE_LABEL: Record<AdminTitle, string> = {
   head: "role_head",
   coordinator: "role_coordinator",
   doctor: "role_doctor",
   professor: "role_professor",
+  platform: "role_platform",
 };
 const TITLE_ICON: Record<AdminTitle, React.ReactNode> = {
   head: <CrownIcon size={14} />,
   coordinator: <ShieldIcon size={14} />,
   doctor: <StethoIcon size={14} />,
   professor: <GradCapIcon size={14} />,
+  platform: <LayersIcon size={14} />,
 };
 
 interface Props {

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account, Attempt, AuditEntry, CustomUniversity, ExamDef, ExamResult, Lang, Question, SavedSession,
+  Vignette, VignetteAuditEntry,
 } from "./types";
 import {
-  ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED,
+  ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED, VIGNETTES_SEED,
 } from "./data/seed";
 import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
 import { registerCustomUniversities } from "./data/hierarchy";
@@ -43,12 +44,16 @@ export default function App() {
   const [sessions, setSessions] = useState<SavedSession[]>(() => load(KEYS.sessions, [] as SavedSession[]));
   const [audit, setAudit] = useState<AuditEntry[]>(() => load(KEYS.audit, [] as AuditEntry[]));
   const [customUnis, setCustomUnis] = useState<CustomUniversity[]>(() => load(KEYS.universities, [] as CustomUniversity[]));
+  const [vignettes, setVignettes] = useState<Vignette[]>(() => load(KEYS.vignettes, VIGNETTES_SEED));
+  const [vignetteAudit, setVignetteAudit] = useState<VignetteAuditEntry[]>(() => load(KEYS.vignetteAudit, [] as VignetteAuditEntry[]));
 
   /* تسجيل الجامعات المخصصة في نظام التسلسل لتظهر فورًا في كل القوائم */
   useEffect(() => {
     registerCustomUniversities(customUnis);
     save(KEYS.universities, customUnis);
   }, [customUnis]);
+  useEffect(() => { save(KEYS.vignettes, vignettes); }, [vignettes]);
+  useEffect(() => { save(KEYS.vignetteAudit, vignetteAudit); }, [vignetteAudit]);
   const [user, setUser] = useState<Account | null>(() => {
     const email = load<string | null>(KEYS.user, null);
     if (!email) return null;
@@ -293,6 +298,40 @@ export default function App() {
     if (gone) logAudit("delete", "admin", gone.name.ar, "university");
   };
 
+  /* ── اللمحات السريرية (سجل تعديل مستقل) ── */
+  const logVignette = (action: VignetteAuditEntry["action"], title: string) => {
+    if (!user) return;
+    setVignetteAudit((prev) =>
+      [
+        {
+          id: uid("va-"),
+          date: Date.now(),
+          actorEmail: user.email,
+          actorName: user.name,
+          action,
+          title,
+        },
+        ...prev,
+      ].slice(0, 200)
+    );
+  };
+  const saveVignette = (v: Vignette, isNew: boolean) => {
+    setVignettes((prev) =>
+      prev.some((x) => x.id === v.id) ? prev.map((x) => (x.id === v.id ? v : x)) : [v, ...prev]
+    );
+    logVignette(isNew ? "create" : "update", v.text.ar || v.text.en);
+  };
+  const deleteVignette = (id: string) => {
+    const gone = vignettes.find((v) => v.id === id);
+    setVignettes((prev) => prev.filter((v) => v.id !== id));
+    if (gone) logVignette("delete", gone.text.ar || gone.text.en);
+  };
+  const toggleVignettePublish = (id: string, published: boolean) => {
+    const target = vignettes.find((v) => v.id === id);
+    setVignettes((prev) => prev.map((v) => (v.id === id ? { ...v, published } : v)));
+    if (target) logVignette(published ? "publish" : "unpublish", target.text.ar || target.text.en);
+  };
+
   const authStats = useMemo(
     () => ({
       questions: questions.length,
@@ -351,6 +390,11 @@ export default function App() {
         customUniversities={customUnis}
         onAddUniversity={addUniversity}
         onDeleteUniversity={deleteUniversity}
+        vignettes={vignettes}
+        vignetteAudit={vignetteAudit}
+        onSaveVignette={saveVignette}
+        onDeleteVignette={deleteVignette}
+        onToggleVignettePublish={toggleVignettePublish}
         onSaveExam={saveExam}
         onDeleteExam={deleteExam}
         onSaveQuestion={saveQuestion}
@@ -371,6 +415,7 @@ export default function App() {
         questions={questions}
         attempts={attempts}
         sessions={sessions}
+        vignettes={vignettes.filter((v) => v.published).map((v) => v.text)}
         onStart={startExam}
         onResume={resumeSession}
         onLogout={logout}

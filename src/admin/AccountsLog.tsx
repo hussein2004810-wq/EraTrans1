@@ -16,6 +16,7 @@ const TITLE_LABEL: Record<string, string> = {
   coordinator: "role_coordinator",
   doctor: "role_doctor",
   professor: "role_professor",
+  platform: "role_platform",
 };
 
 /** سجل الحسابات وبيانات الدخول — يراه المالك ومن مُنح صلاحية accountsLog */

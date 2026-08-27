@@ -1,4 +1,4 @@
-import type { Account, Attempt, ExamDef, Question, Subject, SubjectId } from "../types";
+import type { Account, Attempt, ExamDef, Question, Subject, SubjectId, Vignette } from "../types";
 import { grade, isCorrect } from "../lib/store";
 
 export const SUBJECTS: Subject[] = [
@@ -594,3 +594,14 @@ export const CLINICAL_TIPS: { ar: string; en: string }[] = [
   { ar: "استرواح الصدر التوتري لا ينتظر الأشعة: التشخيص سريري والمعالجة فورية بإزالة الضغط.", en: "Tension pneumothorax is a clinical diagnosis — decompress immediately, don't wait for X-ray." },
   { ar: "مضادات الهيستامين لا تنقذ حياة في التأق — الأدرينالين وحده العلاج الأساسي.", en: "Antihistamines never save lives in anaphylaxis — adrenaline is the only first-line drug." },
 ];
+
+/** بذرة اللمحات السريرية — منشورة افتراضيًا ويعدلها المالك */
+export const VIGNETTES_SEED: Vignette[] = CLINICAL_TIPS.map((tip, i) => ({
+  id: `vig-seed-${i}`,
+  text: tip,
+  published: true,
+  authorEmail: "owner@kiur.edu",
+  authorName: "مالك المنصة",
+  createdAt: Date.now() - 86400000 * (6 - i),
+  updatedAt: Date.now() - 86400000 * (6 - i),
+}));

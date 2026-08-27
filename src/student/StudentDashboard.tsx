@@ -29,15 +29,19 @@ interface Props {
   questions: Question[];
   attempts: Attempt[];
   sessions: SavedSession[];
+  /** اللمحات السريرية التي نشرها المالك للطلبة */
+  vignettes: { ar: string; en: string }[];
   onStart: (exam: ExamDef) => void;
   onResume: (session: SavedSession) => void;
   onLogout: () => void;
 }
 
-export default function StudentDashboard({ user, exams, questions, attempts, sessions, onStart, onResume, onLogout }: Props) {
+export default function StudentDashboard({ user, exams, questions, attempts, sessions, vignettes, onStart, onResume, onLogout }: Props) {
   const { t, bi, lang } = useI18n();
   const [reviewAttempt, setReviewAttempt] = useState<Attempt | null>(null);
-  const [tipIdx] = useState(() => Math.floor(Math.random() * CLINICAL_TIPS.length));
+  /* اللمحات المنشورة من المالك، مع الرجوع للبذور إن لم تُنشر أي لمحة */
+  const tips = vignettes.length > 0 ? vignettes : CLINICAL_TIPS;
+  const [tipIdx] = useState(() => Math.floor(Math.random() * Math.max(1, tips.length)));
   /* بحث الطالب عن الاختبارات والمقررات */
   const [q, setQ] = useState("");
   const [fSub, setFSub] = useState<"all" | SubjectId>("all");
@@ -302,7 +306,7 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
               <StethoIcon size={15} className="text-amberx-500" /> {t("clinical_tips")}
             </p>
             <p className="mt-3 text-sm leading-relaxed text-pulse-100">
-              {lang === "ar" ? CLINICAL_TIPS[tipIdx].ar : CLINICAL_TIPS[tipIdx].en}
+              {lang === "ar" ? tips[tipIdx % tips.length].ar : tips[tipIdx % tips.length].en}
             </p>
             <EcgLine className="mt-4 h-10 w-full text-pulse-300/80" speed={7} />
           </aside>

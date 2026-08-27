@@ -48,6 +48,28 @@ export interface ImageAsset {
   createdAt: number;
 }
 
+/** لمحة سريرية — ينشرها المالك لتظهر في واجهة الطلبة */
+export interface Vignette {
+  id: string;
+  text: BiText;
+  /** يحددها المالك فقط: هل تظهر للطلبة أم لا */
+  published: boolean;
+  authorEmail: string;
+  authorName: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** قيد في سجل تعديل اللمحات السريرية — سجل مستقل عن سجل التدقيق العام */
+export interface VignetteAuditEntry {
+  id: string;
+  date: number;
+  actorEmail: string;
+  actorName: string;
+  action: "create" | "update" | "delete" | "publish" | "unpublish";
+  title: string;
+}
+
 export interface ExamDef {
   id: string;
   title: BiText;
@@ -83,7 +105,7 @@ export interface ExamDef {
 export type Role = "student" | "admin" | "owner";
 
 /** اللقب الأكاديمي للمشرف داخل قسمه */
-export type AdminTitle = "head" | "coordinator" | "doctor" | "professor";
+export type AdminTitle = "head" | "coordinator" | "doctor" | "professor" | "platform";
 
 /** صلاحيات إشرافية قابلة للتمنح من مالك المنصة */
 export type PermKey =
@@ -96,11 +118,12 @@ export type PermKey =
   | "export"
   | "audit"
   | "universities"
-  | "accountsLog";
+  | "accountsLog"
+  | "vignettes";
 
 export const ALL_PERMS: PermKey[] = [
   "exams", "questions", "images", "import", "students", "reports", "export", "audit",
-  "universities", "accountsLog",
+  "universities", "accountsLog", "vignettes",
 ];
 
 /** صلاحيات افتراضية لكل لقب أكاديمي (يعدّلها المالك) */
@@ -109,6 +132,7 @@ export const TITLE_DEFAULT_PERMS: Record<AdminTitle, PermKey[]> = {
   coordinator: ["exams", "questions", "students", "reports", "export"],
   doctor: ["questions", "students", "reports"],
   professor: ["questions", "exams", "reports"],
+  platform: ["exams", "questions", "images", "import", "students", "reports", "export", "audit", "universities"],
 };
 
 /** جامعة يضيفها المالك يدويًا */

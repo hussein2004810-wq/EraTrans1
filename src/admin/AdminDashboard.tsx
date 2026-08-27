@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, AuditEntry, CustomUniversity, ExamDef, PermKey, Question, SavedSession } from "../types";
+import type { Account, Attempt, AuditEntry, CustomUniversity, ExamDef, PermKey, Question, SavedSession, Vignette, VignetteAuditEntry } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
 import { findCollege, findDept, findDeptInUniversity, findUniversity } from "../data/hierarchy";
@@ -14,15 +14,16 @@ import AuditLog from "./AuditLog";
 import StressTest from "./StressTest";
 import UniversitiesPanel from "./UniversitiesPanel";
 import AccountsLog from "./AccountsLog";
+import VignettesPanel from "./VignettesPanel";
 import {
   AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, KeyIcon, LayersIcon,
-  LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
+  LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, StethoIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 type Tab =
   | "overview" | "exams" | "questions" | "images" | "import"
   | "students" | "reports" | "export" | "audit" | "admins" | "stress"
-  | "universities" | "accountsLog";
+  | "universities" | "accountsLog" | "vignettes";
 
 interface Props {
   user: Account;
@@ -34,6 +35,11 @@ interface Props {
   customUniversities: CustomUniversity[];
   onAddUniversity: (u: CustomUniversity) => void;
   onDeleteUniversity: (id: string) => void;
+  vignettes: Vignette[];
+  vignetteAudit: VignetteAuditEntry[];
+  onSaveVignette: (v: Vignette, isNew: boolean) => void;
+  onDeleteVignette: (id: string) => void;
+  onToggleVignettePublish: (id: string, published: boolean) => void;
   onSaveExam: (e: ExamDef) => void;
   onDeleteExam: (id: string) => void;
   onSaveQuestion: (q: Question) => void;
@@ -78,6 +84,7 @@ export default function AdminDashboard(props: Props) {
     { id: "reports", label: t("reports_tab"), icon: <AwardIcon size={16} />, show: has("reports") },
     { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} />, show: has("export") },
     { id: "audit", label: t("audit_tab"), icon: <EyeIcon size={16} />, show: has("audit") },
+    { id: "vignettes", label: t("vignettes_tab"), icon: <StethoIcon size={16} />, show: has("vignettes") },
     { id: "universities", label: t("universities_tab"), icon: <GradCapIcon size={16} />, show: has("universities") },
     { id: "accountsLog", label: t("accounts_log_tab"), icon: <KeyIcon size={16} />, show: has("accountsLog") },
     { id: "stress", label: t("stress_tab"), icon: <GaugeIcon size={16} />, show: isOwner },
@@ -208,6 +215,16 @@ export default function AdminDashboard(props: Props) {
           {activeTab === "reports" && <Reports exams={scopedExams} attempts={scopedAttempts} />}
           {activeTab === "export" && <ExportCenter exams={scopedExams} attempts={scopedAttempts} accounts={accounts} />}
           {activeTab === "audit" && <AuditLog entries={audit} />}
+          {activeTab === "vignettes" && (
+            <VignettesPanel
+              user={user}
+              vignettes={props.vignettes}
+              vignetteAudit={props.vignetteAudit}
+              onSaveVignette={props.onSaveVignette}
+              onDeleteVignette={props.onDeleteVignette}
+              onTogglePublish={props.onToggleVignettePublish}
+            />
+          )}
           {activeTab === "universities" && (
             <UniversitiesPanel
               customUniversities={props.customUniversities}

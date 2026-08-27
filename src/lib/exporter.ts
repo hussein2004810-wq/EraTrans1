@@ -1,10 +1,25 @@
 export interface ExportFile {
   blob: Blob;
   url: string;
-  /** رابط Data URI بترميز base64 — الطريقة الأكثر موثوقية للتنزيل في بيئات العرض المحمية */
+  /** رابط Data URI بترميز base64 — احتياطي للفتح في تبويب */
   dataUri: string;
   filename: string;
   sizeKB: number;
+}
+
+/**
+ * تنزيل موثوق عبر نقر برمجي على رابط مؤقت يستخدم كائن Blob —
+ * يعمل عبر المتصفحات وبيئات العرض، بعكس روابط data: التي تحجبها المتصفحات الحديثة.
+ */
+export function downloadFile(file: ExportFile) {
+  const a = document.createElement("a");
+  a.href = file.url;
+  a.download = file.filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  window.setTimeout(() => a.remove(), 1500);
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10);
