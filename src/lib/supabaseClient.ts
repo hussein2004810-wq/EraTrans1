@@ -7,15 +7,28 @@ export interface SyncConfig {
 
 const CONFIG_KEY = "kiur.supabase.config";
 
+/* متغيرات البناء (Vercel / Netlify) — تُقرأ مرة واحدة عند التحميل */
+const ENV = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+const ENV_URL = ENV.VITE_SUPABASE_URL;
+const ENV_KEY = ENV.VITE_SUPABASE_ANON_KEY ?? ENV.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+export function hasEnvConfig(): boolean {
+  return !!ENV_URL && !!ENV_KEY;
+}
+
 export function getConfig(): SyncConfig | null {
+  /* إعدادات التشغيل (ما يلصقه المالك داخل المنصة) لها الأولوية على متغيرات البناء */
   try {
     const raw = localStorage.getItem(CONFIG_KEY);
-    if (!raw) return null;
-    const c = JSON.parse(raw) as SyncConfig;
-    return c.url && c.anonKey ? c : null;
+    if (raw) {
+      const c = JSON.parse(raw) as SyncConfig;
+      if (c.url && c.anonKey) return c;
+    }
   } catch {
-    return null;
+    /* تجاهل القيم التالفة والرجوع للمتغيرات */
   }
+  if (ENV_URL && ENV_KEY) return { url: ENV_URL, anonKey: ENV_KEY };
+  return null;
 }
 
 export function setConfig(c: SyncConfig) {
