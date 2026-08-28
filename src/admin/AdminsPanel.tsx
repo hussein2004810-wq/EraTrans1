@@ -21,6 +21,7 @@ const PERM_LABEL: Record<PermKey, string> = {
   universities: "perm_universities",
   accountsLog: "perm_accounts_log",
   vignettes: "perm_vignettes",
+  shares: "perm_shares",
 };
 
 const TITLES: AdminTitle[] = ["head", "coordinator", "doctor", "professor", "platform"];

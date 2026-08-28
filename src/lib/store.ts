@@ -12,6 +12,9 @@ export const KEYS = {
   universities: "kiur.universities.v2",
   vignettes: "kiur.vignettes.v2",
   vignetteAudit: "kiur.vignetteAudit.v2",
+  colleges: "kiur.colleges.v2",
+  depts: "kiur.depts.v2",
+  shares: "kiur.shares.v2",
   user: "kiur.user.v2",
   lang: "kiur.lang.v2",
 } as const;

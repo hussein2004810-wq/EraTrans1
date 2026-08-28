@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, AuditEntry, CustomUniversity, ExamDef, PermKey, Question, SavedSession, Vignette, VignetteAuditEntry } from "../types";
+import type { Account, Attempt, AuditEntry, CustomCollege, CustomDept, CustomUniversity, ExamDef, PermKey, Question, SavedSession, ShareRequest, Vignette, VignetteAuditEntry } from "../types";
 import { useI18n } from "../i18n";
 import { SUBJECTS } from "../data/seed";
 import { findCollege, findDept, findDeptInUniversity, findUniversity } from "../data/hierarchy";
@@ -12,18 +12,19 @@ import ExportCenter from "./ExportCenter";
 import AdminsPanel from "./AdminsPanel";
 import AuditLog from "./AuditLog";
 import StressTest from "./StressTest";
-import UniversitiesPanel from "./UniversitiesPanel";
 import AccountsLog from "./AccountsLog";
 import VignettesPanel from "./VignettesPanel";
+import CollegesPanel from "./CollegesPanel";
+import ShareRequests from "./ShareRequests";
 import {
   AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, KeyIcon, LayersIcon,
-  LogoutIcon, PlusIcon, SearchIcon, ShieldIcon, SheetIcon, StethoIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
+  LogoutIcon, PlusIcon, SearchIcon, ShareIcon, ShieldIcon, SheetIcon, StethoIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 type Tab =
   | "overview" | "exams" | "questions" | "images" | "import"
   | "students" | "reports" | "export" | "audit" | "admins" | "stress"
-  | "universities" | "accountsLog" | "vignettes";
+  | "colleges" | "accountsLog" | "vignettes" | "shares";
 
 interface Props {
   user: Account;
@@ -40,6 +41,14 @@ interface Props {
   onSaveVignette: (v: Vignette, isNew: boolean) => void;
   onDeleteVignette: (id: string) => void;
   onToggleVignettePublish: (id: string, published: boolean) => void;
+  customColleges: CustomCollege[];
+  customDepts: CustomDept[];
+  onSaveCollege: (c: CustomCollege, isNew: boolean) => void;
+  onDeleteCollege: (id: string) => void;
+  onSaveDept: (d: CustomDept, isNew: boolean) => void;
+  onDeleteDept: (id: string) => void;
+  shares: ShareRequest[];
+  onDecideShare: (id: string, approve: boolean) => void;
   onSaveExam: (e: ExamDef) => void;
   onDeleteExam: (id: string) => void;
   onSaveQuestion: (q: Question) => void;
@@ -85,7 +94,8 @@ export default function AdminDashboard(props: Props) {
     { id: "export", label: t("export_tab"), icon: <DownloadIcon size={16} />, show: has("export") },
     { id: "audit", label: t("audit_tab"), icon: <EyeIcon size={16} />, show: has("audit") },
     { id: "vignettes", label: t("vignettes_tab"), icon: <StethoIcon size={16} />, show: has("vignettes") },
-    { id: "universities", label: t("universities_tab"), icon: <GradCapIcon size={16} />, show: has("universities") },
+    { id: "colleges", label: t("colleges_tab"), icon: <GradCapIcon size={16} />, show: has("universities") },
+    { id: "shares", label: t("shares_tab"), icon: <ShareIcon size={16} />, show: has("shares") || isOwner },
     { id: "accountsLog", label: t("accounts_log_tab"), icon: <KeyIcon size={16} />, show: has("accountsLog") },
     { id: "stress", label: t("stress_tab"), icon: <GaugeIcon size={16} />, show: isOwner },
     { id: "admins", label: t("admins_tab"), icon: <CrownIcon size={16} />, show: isOwner },
@@ -225,11 +235,26 @@ export default function AdminDashboard(props: Props) {
               onTogglePublish={props.onToggleVignettePublish}
             />
           )}
-          {activeTab === "universities" && (
-            <UniversitiesPanel
+          {activeTab === "colleges" && (
+            <CollegesPanel
               customUniversities={props.customUniversities}
-              onAdd={props.onAddUniversity}
-              onDelete={props.onDeleteUniversity}
+              customColleges={props.customColleges}
+              customDepts={props.customDepts}
+              onAddUniversity={props.onAddUniversity}
+              onDeleteUniversity={props.onDeleteUniversity}
+              onSaveCollege={props.onSaveCollege}
+              onDeleteCollege={props.onDeleteCollege}
+              onSaveDept={props.onSaveDept}
+              onDeleteDept={props.onDeleteDept}
+            />
+          )}
+          {activeTab === "shares" && (
+            <ShareRequests
+              user={user}
+              shares={props.shares}
+              exams={exams}
+              accounts={accounts}
+              onDecideShare={props.onDecideShare}
             />
           )}
           {activeTab === "accountsLog" && <AccountsLog accounts={accounts} />}

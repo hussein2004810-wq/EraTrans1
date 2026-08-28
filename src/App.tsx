@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
-  Account, Attempt, AuditEntry, CustomUniversity, ExamDef, ExamResult, Lang, Question, SavedSession,
-  Vignette, VignetteAuditEntry,
+  Account, Attempt, AuditEntry, CustomCollege, CustomDept, CustomUniversity, ExamDef, ExamResult,
+  Lang, Question, SavedSession, ShareRequest, Vignette, VignetteAuditEntry,
 } from "./types";
 import {
   ACCOUNTS_SEED, ADMIN_SEED, ATTEMPTS_SEED, EXAMS_SEED, QUESTIONS_SEED, VIGNETTES_SEED,
 } from "./data/seed";
 import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
-import { registerCustomUniversities } from "./data/hierarchy";
+import { registerCustomColleges, registerCustomDepts, registerCustomUniversities } from "./data/hierarchy";
 import { I18nProvider } from "./i18n";
 import Auth from "./components/Auth";
 import StudentDashboard from "./student/StudentDashboard";
@@ -44,14 +44,26 @@ export default function App() {
   const [sessions, setSessions] = useState<SavedSession[]>(() => load(KEYS.sessions, [] as SavedSession[]));
   const [audit, setAudit] = useState<AuditEntry[]>(() => load(KEYS.audit, [] as AuditEntry[]));
   const [customUnis, setCustomUnis] = useState<CustomUniversity[]>(() => load(KEYS.universities, [] as CustomUniversity[]));
+  const [customColleges, setCustomColleges] = useState<CustomCollege[]>(() => load(KEYS.colleges, [] as CustomCollege[]));
+  const [customDepts, setCustomDepts] = useState<CustomDept[]>(() => load(KEYS.depts, [] as CustomDept[]));
+  const [shares, setShares] = useState<ShareRequest[]>(() => load(KEYS.shares, [] as ShareRequest[]));
   const [vignettes, setVignettes] = useState<Vignette[]>(() => load(KEYS.vignettes, VIGNETTES_SEED));
   const [vignetteAudit, setVignetteAudit] = useState<VignetteAuditEntry[]>(() => load(KEYS.vignetteAudit, [] as VignetteAuditEntry[]));
 
-  /* تسجيل الجامعات المخصصة في نظام التسلسل لتظهر فورًا في كل القوائم */
+  /* تسجيل الجامعات والكليات والأقسام المخصصة في نظام التسلسل لتظهر فورًا في كل القوائم */
   useEffect(() => {
     registerCustomUniversities(customUnis);
     save(KEYS.universities, customUnis);
   }, [customUnis]);
+  useEffect(() => {
+    registerCustomColleges(customColleges);
+    save(KEYS.colleges, customColleges);
+  }, [customColleges]);
+  useEffect(() => {
+    registerCustomDepts(customDepts);
+    save(KEYS.depts, customDepts);
+  }, [customDepts]);
+  useEffect(() => { save(KEYS.shares, shares); }, [shares]);
   useEffect(() => { save(KEYS.vignettes, vignettes); }, [vignettes]);
   useEffect(() => { save(KEYS.vignetteAudit, vignetteAudit); }, [vignetteAudit]);
   const [user, setUser] = useState<Account | null>(() => {
@@ -295,7 +307,67 @@ export default function App() {
   const deleteUniversity = (id: string) => {
     const gone = customUnis.find((u) => u.id === id);
     setCustomUnis((prev) => prev.filter((u) => u.id !== id));
-    if (gone) logAudit("delete", "admin", gone.name.ar, "university");
+    if (gone) logAudit("delete", "university", gone.name.ar);
+  };
+
+  /* ── الكليات والأقسام المخصصة ── */
+  const saveCollege = (c: CustomCollege, isNew: boolean) => {
+    setCustomColleges((prev) =>
+      prev.some((x) => x.id === c.id) ? prev.map((x) => (x.id === c.id ? c : x)) : [...prev, c]
+    );
+    logAudit(isNew ? "create" : "update", "university", c.name.ar, "college");
+  };
+  const deleteCollege = (id: string) => {
+    const gone = customColleges.find((c) => c.id === id);
+    setCustomColleges((prev) => prev.filter((c) => c.id !== id));
+    if (gone) logAudit("delete", "university", gone.name.ar, "college");
+  };
+  const saveDept = (d: CustomDept, isNew: boolean) => {
+    setCustomDepts((prev) =>
+      prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]
+    );
+    logAudit(isNew ? "create" : "update", "university", d.name.ar, "department");
+  };
+  const deleteDept = (id: string) => {
+    const gone = customDepts.find((d) => d.id === id);
+    setCustomDepts((prev) => prev.filter((d) => d.id !== id));
+    if (gone) logAudit("delete", "university", gone.name.ar, "department");
+  };
+
+  /* ── مشاركة الاختبارات بين الجامعات ── */
+  const requestShare = (examId: string, from: Account, to: Account): void => {
+    const exam = exams.find((e) => e.id === examId);
+    if (!exam) return;
+    const req: ShareRequest = {
+      id: uid("sh-"),
+      examId,
+      fromEmail: from.email,
+      fromName: from.name,
+      toEmail: to.email,
+      toName: to.name,
+      status: "pending",
+      requestedAt: Date.now(),
+    };
+    setShares((prev) => [req, ...prev]);
+    logAudit("create", "share", exam.title.ar || exam.title.en, `${from.email} → ${to.email}`);
+  };
+  const decideShare = (id: string, approve: boolean) => {
+    const req = shares.find((s) => s.id === id);
+    if (!req || !user) return;
+    const exam = exams.find((e) => e.id === req.examId);
+    setShares((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? { ...s, status: approve ? "approved" : "rejected", decidedByEmail: user.email, decidedByName: user.name, decidedAt: Date.now() }
+          : s
+      )
+    );
+    logAudit(
+      approve ? "grant" : "update",
+      "share",
+      exam ? exam.title.ar || exam.title.en : req.examId,
+      `${approve ? "approved" : "rejected"}: ${req.fromEmail} → ${req.toEmail}`
+    );
   };
 
   /* ── اللمحات السريرية (سجل تعديل مستقل) ── */
@@ -390,6 +462,14 @@ export default function App() {
         customUniversities={customUnis}
         onAddUniversity={addUniversity}
         onDeleteUniversity={deleteUniversity}
+        customColleges={customColleges}
+        customDepts={customDepts}
+        onSaveCollege={saveCollege}
+        onDeleteCollege={deleteCollege}
+        onSaveDept={saveDept}
+        onDeleteDept={deleteDept}
+        shares={shares}
+        onDecideShare={decideShare}
         vignettes={vignettes}
         vignetteAudit={vignetteAudit}
         onSaveVignette={saveVignette}

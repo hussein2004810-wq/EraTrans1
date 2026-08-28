@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import type { Account, Attempt, ExamDef, Question, SavedSession, SubjectId } from "../types";
+import type { Account, Attempt, ExamDef, Question, SavedSession, ShareRequest, SubjectId } from "../types";
 import { useI18n } from "../i18n";
 import { CLINICAL_TIPS, SUBJECTS, subjectById } from "../data/seed";
 import { findCollege, findDept, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
-import { EmptyState, KiurWordmark, LangSwitch, SubjectTag, TypeBadge, formatDate } from "../components/ui";
+import { EmptyState, KiurWordmark, LangSwitch, Modal, SubjectTag, TypeBadge, formatDate } from "../components/ui";
 import { AttemptReviewModal } from "../exam/ExamResults";
 import {
   AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, ClockIcon, EyeIcon,
-  GradCapIcon, HeartPulseIcon, LayersIcon, LogoutIcon, SaveIcon, SearchIcon, StethoIcon, TargetIcon, XIcon,
+  GradCapIcon, HeartPulseIcon, LayersIcon, LogoutIcon, SaveIcon, SearchIcon, ShareIcon, StethoIcon, TargetIcon, XIcon,
 } from "../components/icons";
 
 export function effectiveCount(exam: ExamDef, bank: Question[]): number {
@@ -31,12 +31,14 @@ interface Props {
   sessions: SavedSession[];
   /** اللمحات السريرية التي نشرها المالك للطلبة */
   vignettes: { ar: string; en: string }[];
+  shares: ShareRequest[];
   onStart: (exam: ExamDef) => void;
   onResume: (session: SavedSession) => void;
   onLogout: () => void;
+  onRequestShare: (examId: string, from: Account, to: Account) => string | null;
 }
 
-export default function StudentDashboard({ user, exams, questions, attempts, sessions, vignettes, onStart, onResume, onLogout }: Props) {
+export default function StudentDashboard({ user, exams, questions, attempts, sessions, vignettes, shares, onStart, onResume, onLogout, onRequestShare }: Props) {
   const { t, bi, lang } = useI18n();
   const [reviewAttempt, setReviewAttempt] = useState<Attempt | null>(null);
   /* اللمحات المنشورة من المالك، مع الرجوع للبذور إن لم تُنشر أي لمحة */
@@ -45,6 +47,25 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
   /* بحث الطالب عن الاختبارات والمقررات */
   const [q, setQ] = useState("");
   const [fSub, setFSub] = useState<"all" | SubjectId>("all");
+  /* مشاركة الاختبارات */
+  const [shareExam, setShareExam] = useState<ExamDef | null>(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareErr, setShareErr] = useState<string | null>(null);
+  const [shareOk, setShareOk] = useState(false);
+
+  /* الاختبارات المُشاركة إلى هذا الطالب والمقبولة من المشرف */
+  const sharedToMe = useMemo(
+    () => new Set(
+      shares
+        .filter((s) => s.toEmail === user.email && s.status === "approved")
+        .map((s) => s.examId)
+    ),
+    [shares, user.email]
+  );
+  const myShareReqs = useMemo(
+    () => shares.filter((s) => s.fromEmail === user.email).sort((a, b) => b.requestedAt - a.requestedAt),
+    [shares, user.email]
+  );
 
   const mine = useMemo(
     () => attempts.filter((a) => a.studentEmail === user.email).sort((a, b) => b.date - a.date),
@@ -64,9 +85,11 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
   );
   const resumeExam = resumable ? exams.find((e) => e.id === resumable.examId) : undefined;
 
-  /* الطالب يرى اختبارات جامعته والاختبارات المشتركة فقط */
+  /* الطالب يرى: اختبارات جامعته + المشتركة + ما شُورك معه وقُبل من المشرف */
   const published = exams.filter(
-    (e) => e.published && (e.university === "" || e.university === user.university)
+    (e) =>
+      e.published &&
+      (e.university === "" || e.university === user.university || sharedToMe.has(e.id))
   );
   const hour = new Date().getHours();
   const greeting =
@@ -241,6 +264,11 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                             {bi(findUniversity(exam.university)?.name ?? { ar: exam.university, en: exam.university })}
                           </span>
                         )}
+                        {sharedToMe.has(exam.id) && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-moss-100 px-2.5 py-1 text-xs font-bold text-moss-700">
+                            <ShareIcon size={12} /> {t("share_shared_to_you")}
+                          </span>
+                        )}
                         {exam.subjectIds.length === 0 ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-pine-900 px-2.5 py-1 text-xs font-semibold text-pulse-300">
                             <LayersIcon size={12} /> {t("all_subjects")}
@@ -272,22 +300,38 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                         )}
                       </div>
 
-                      <button
-                        onClick={() => {
-                          /* محاولة قفل النافذة بملء الشاشة قبل بدء الاختبار */
-                          try {
-                            document.documentElement.requestFullscreen?.().catch(() => {});
-                          } catch {
-                            /* غير مدعوم */
-                          }
-                          onStart(exam);
-                        }}
-                        disabled={disabled}
-                        className="btn-primary mt-5 w-full"
-                      >
-                        <GradCapIcon size={17} />
-                        {t("start_exam")}
-                      </button>
+                      <div className="mt-5 flex gap-2">
+                        <button
+                          onClick={() => {
+                            /* محاولة قفل النافذة بملء الشاشة قبل بدء الاختبار */
+                            try {
+                              document.documentElement.requestFullscreen?.().catch(() => {});
+                            } catch {
+                              /* غير مدعوم */
+                            }
+                            onStart(exam);
+                          }}
+                          disabled={disabled}
+                          className="btn-primary flex-1"
+                        >
+                          <GradCapIcon size={17} />
+                          {t("start_exam")}
+                        </button>
+                        {exam.university && (
+                          <button
+                            onClick={() => {
+                              setShareExam(exam);
+                              setShareEmail("");
+                              setShareErr(null);
+                              setShareOk(false);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border-2 border-line bg-white px-3 text-sm font-bold text-ink-soft transition-all hover:border-pulse-500 hover:text-pulse-700"
+                            title={t("share_student_title")}
+                          >
+                            <ShareIcon size={15} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </article>
                 );
@@ -298,6 +342,37 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
             </>
           )}
         </section>
+
+        {/* ───── طلبات مشاركاتي ───── */}
+        {myShareReqs.length > 0 && (
+          <section className="card anim-fade-up mt-6 overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+              <ShareIcon size={19} className="text-pulse-600" />
+              <h2 className="font-display text-xl font-bold">{t("share_my")}</h2>
+            </div>
+            <ul className="divide-y divide-line">
+              {myShareReqs.map((s) => {
+                const ex = exams.find((e) => e.id === s.examId);
+                const meta =
+                  s.status === "pending"
+                    ? { label: t("share_status_pending"), cls: "bg-amberx-100 text-amberx-600" }
+                    : s.status === "approved"
+                      ? { label: t("share_status_approved"), cls: "bg-moss-100 text-moss-700" }
+                      : { label: t("share_status_rejected"), cls: "bg-blood-100 text-blood-700" };
+                return (
+                  <li key={s.id} className="flex flex-wrap items-center gap-2 px-5 py-3 transition-colors hover:bg-pulse-100/20">
+                    <span className="font-semibold">{ex ? bi(ex.title) : s.examId}</span>
+                    <span className="text-xs text-ink-soft">→ {s.toName}</span>
+                    <span className="ms-auto flex items-center gap-2">
+                      <span className="text-[11px] text-ink-soft">{formatDate(s.requestedAt, lang)}</span>
+                      <span className={"rounded-full px-2.5 py-1 text-[11px] font-bold " + meta.cls}>{meta.label}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* ───── لمحة سريرية + السجل ───── */}
         <div className="grid gap-6 lg:grid-cols-[300px_1fr]">

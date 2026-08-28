@@ -1,4 +1,4 @@
-import type { BiText, CustomUniversity } from "../types";
+import type { BiText, CustomCollege, CustomDept, CustomUniversity } from "../types";
 
 export interface Dept {
   id: string;
@@ -128,14 +128,23 @@ export const UNIVERSITIES: University[] = [
   { id: "muthanna", name: { ar: "جامعة المثنى", en: "University of Muthanna" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
   { id: "wasit", name: { ar: "جامعة واسط", en: "University of Wasit" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
   { id: "karbala", name: { ar: "جامعة كربلاء", en: "University of Karbala" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing", "medtech"] },
+  { id: "mamoon", name: { ar: "جامعة المأمون", en: "Al-Ma'moon University" }, collegeIds: ["medicine", "dentistry", "pharmacy", "nursing"] },
 ];
 
-/* ───────── الجامعات المخصصة (يضيفها المالك) ───────── */
+/* ───────── الجامعات والكليات والأقسام المخصصة (يضيفها المالك) ───────── */
 
 let _customUnis: CustomUniversity[] = [];
+let _customColleges: CustomCollege[] = [];
+let _customDepts: CustomDept[] = [];
 
 export function registerCustomUniversities(list: CustomUniversity[]) {
   _customUnis = list;
+}
+export function registerCustomColleges(list: CustomCollege[]) {
+  _customColleges = list;
+}
+export function registerCustomDepts(list: CustomDept[]) {
+  _customDepts = list;
 }
 
 /** كل الجامعات: الثابتة + المخصصة */
@@ -146,17 +155,28 @@ export function allUniversities(): University[] {
   ];
 }
 
+/** كل الكليات: الثابتة + المخصصة */
+export function allColleges(): College[] {
+  const custom = _customColleges.map((c) => ({
+    id: c.id,
+    name: c.name,
+    maxYears: c.maxYears,
+    depts: _customDepts.filter((d) => d.collegeId === c.id).map((d) => ({ id: d.id, name: d.name })),
+  }));
+  return [...COLLEGES, ...custom];
+}
+
 /* ───────── دوال مساعدة ───────── */
 
 export function findUniversity(id?: string): University | undefined {
   return allUniversities().find((u) => u.id === id);
 }
 export function findCollege(id?: string): College | undefined {
-  return COLLEGES.find((c) => c.id === id);
+  return allColleges().find((c) => c.id === id);
 }
 export function collegesOf(uniId?: string): College[] {
   const u = findUniversity(uniId);
-  if (!u) return COLLEGES;
+  if (!u) return allColleges();
   return u.collegeIds.map((id) => findCollege(id)).filter((c): c is College => !!c);
 }
 export function findDept(collegeId?: string, deptId?: string): Dept | undefined {

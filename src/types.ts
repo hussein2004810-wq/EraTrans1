@@ -119,20 +119,21 @@ export type PermKey =
   | "audit"
   | "universities"
   | "accountsLog"
-  | "vignettes";
+  | "vignettes"
+  | "shares";
 
 export const ALL_PERMS: PermKey[] = [
   "exams", "questions", "images", "import", "students", "reports", "export", "audit",
-  "universities", "accountsLog", "vignettes",
+  "universities", "accountsLog", "vignettes", "shares",
 ];
 
 /** صلاحيات افتراضية لكل لقب أكاديمي (يعدّلها المالك) */
 export const TITLE_DEFAULT_PERMS: Record<AdminTitle, PermKey[]> = {
-  head: ["exams", "questions", "images", "import", "students", "reports", "export", "audit"],
-  coordinator: ["exams", "questions", "students", "reports", "export"],
+  head: ["exams", "questions", "images", "import", "students", "reports", "export", "audit", "shares"],
+  coordinator: ["exams", "questions", "students", "reports", "export", "shares"],
   doctor: ["questions", "students", "reports"],
   professor: ["questions", "exams", "reports"],
-  platform: ["exams", "questions", "images", "import", "students", "reports", "export", "audit", "universities"],
+  platform: ["exams", "questions", "images", "import", "students", "reports", "export", "audit", "universities", "shares"],
 };
 
 /** جامعة يضيفها المالك يدويًا */
@@ -142,6 +143,39 @@ export interface CustomUniversity {
   collegeIds: string[];
   custom: true;
   createdAt: number;
+}
+
+/** كلية مخصصة يضيفها المالك */
+export interface CustomCollege {
+  id: string;
+  name: BiText;
+  maxYears: number;
+  custom: true;
+  createdAt: number;
+}
+
+/** قسم مخصص يضيفه المالك داخل أي كلية */
+export interface CustomDept {
+  id: string;
+  collegeId: string;
+  name: BiText;
+  custom: true;
+  createdAt: number;
+}
+
+/** طلب مشاركة اختبار بين جامعتين — يتطلب موافقة مشرف جامعة الاختبار */
+export interface ShareRequest {
+  id: string;
+  examId: string;
+  fromEmail: string;
+  fromName: string;
+  toEmail: string;
+  toName: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: number;
+  decidedByEmail?: string;
+  decidedByName?: string;
+  decidedAt?: number;
 }
 
 export interface Account {
@@ -172,7 +206,7 @@ export interface AuditEntry {
   actorName: string;
   actorRole: Role;
   action: "create" | "update" | "delete" | "import" | "grant";
-  target: "exam" | "question" | "admin" | "student";
+  target: "exam" | "question" | "admin" | "student" | "share" | "university";
   title: string;
   details?: string;
 }

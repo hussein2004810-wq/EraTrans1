@@ -25,6 +25,8 @@ const TARGET_LABEL: Record<AuditEntry["target"], string> = {
   question: "tgt_question",
   admin: "tgt_admin",
   student: "tgt_student",
+  share: "tgt_share",
+  university: "tgt_university",
 };
 
 /** سجل التدقيق — يراه المالك ومن مُنح صلاحية audit */
