@@ -1,5 +1,40 @@
+# ── الاعتمادات والبناء ──
 node_modules/
-.next/
 dist/
-build/
+dist-ssr/
+*.local
+
+# ── سجلات وأخطاء ──
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── المحررات وأنظمة التشغيل ──
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── ملفات البيئة (لا ترفع مفاتيح API أبدًا) ──
+.env
+.env.local
+.env.*.local
+*.pem
+
+# ── أدوات النشر ──
+.netlify/
+.vercel/
+.turbo/
+coverage/
+.next/
+build/
