@@ -31,6 +31,12 @@ npm run build    # إنتاج → dist/
 ## النشر
 راجع [GITHUB.md](./GITHUB.md) لرفع المشروع كمستودع خاص، و[DEPLOY.md](./DEPLOY.md) للنشر المجاني على Netlify / Vercel.
 
+## المزامنة والمصادقة (Supabase)
+- مزامنة البيانات بين الأجهزة عبر 11 جدولًا (`supabase/schema.sql`)
+- **المرحلة الثانية منفّذة**: مصادقة عبر Supabase Auth (كلمات مرور مشفّرة bcrypt) + Hook حدّ المعدل
+  (`supabase/migrations/20260103000000_password_rate_limit.sql`)
+- تقييد اختياري لجداول البيانات على الموثّقين: `supabase/optional_authenticated_lockdown.sql`
+- خطوات التشغيل الكاملة في `STEPS.md` والنشر في `DEPLOY.md`
+
 ## الخطط القادمة
-- ربط Supabase للمزامنة الفعلية بين الأجهزة (الحزم مثبتة وجاهزة)
 - جدولة الاختبارات بنوافذ زمنية، وكود دخول لكل اختبار

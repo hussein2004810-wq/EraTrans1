@@ -46,7 +46,8 @@ export function getClient(): SupabaseClient | null {
   if (!c) return null;
   if (!_client) {
     _client = createClient(c.url, c.anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      /* persistSession: بقاء الدخول بعد تحديث الصفحة · autoRefresh: تجديد الرمز تلقائيًا */
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     });
   }
   return _client;

@@ -1,4 +1,5 @@
 import { getClient } from "./supabaseClient";
+import { SEED_ACCOUNT_EMAILS } from "../data/seed";
 
 /**
  * طبقة المزامنة مع Supabase.
@@ -44,12 +45,27 @@ export async function pull<T>(name: CollectionName): Promise<T[] | null> {
   return (data as Row<T>[]).map((r) => r.data);
 }
 
-/** دفع مجموعة كاملة (upsert لكل عنصر) */
+/**
+ * دفع مجموعة كاملة (upsert لكل عنصر).
+ * أمان: تُجرَّد كلمات المرور من الحسابات قبل إرسالها إلى السحابة —
+ * المصادقة الحقيقية تعيش في Supabase Auth وليس في قاعدة البيانات.
+ */
 export async function push<T>(name: CollectionName, items: T[]): Promise<boolean> {
   const sb = getClient();
   if (!sb) return false;
   if (items.length === 0) return true;
-  const rows: Row<T>[] = items.map((it) => ({ id: keyOf(it), data: it }));
+  const safe: unknown[] =
+    name === "accounts"
+      ? (items as { email?: string; password?: string }[])
+          /* استبعاد حسابات العرض التجريبي من السحابة */
+          .filter((a) => !SEED_ACCOUNT_EMAILS.has((a.email ?? "").toLowerCase()))
+          .map((a) => {
+            /* وتجريد كلمات المرور — المصادقة تعيش في Supabase Auth */
+            const { password: _pw, ...rest } = a;
+            return rest;
+          })
+      : items;
+  const rows: Row<T>[] = (safe as T[]).map((it) => ({ id: keyOf(it), data: it }));
   const { error } = await sb.from(TABLES[name]).upsert(rows, { onConflict: "id" });
   return !error;
 }

@@ -523,6 +523,14 @@ export const ACCOUNTS_SEED: Account[] = [
   ADMIN2_SEED,
 ];
 
+/**
+ * حسابات العرض التجريبي — تُستبعد من المزامنة السحابية حتى يبقى دليل الحسابات
+ * في السحابة مقتصرًا على المستخدمين الحقيقيين (يضمن عمل تمهيد "أول مسجَّل = المالك").
+ */
+export const SEED_ACCOUNT_EMAILS = new Set(
+  ACCOUNTS_SEED.map((a) => a.email.toLowerCase())
+);
+
 /** محاكاة محاولة طالب على اختبار لملء السجل عند أول تشغيل */
 export function mockAttempt(
   exam: ExamDef,

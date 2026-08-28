@@ -540,6 +540,15 @@ const STR: Record<string, BiText> = {
   sync_step4: { ar: "اضغط «اتصال ومزامنة» — ستُبذر البيانات المحلية تلقائيًا ثم تتوحد بين كل الأجهزة.", en: "Press Connect & Sync — local data is seeded automatically, then unified across devices." },
   sync_security_note: { ar: "تنبيه أمني: السياسات الحالية مفتوحة لمفتاح anon لتسهيل التشغيل. للإنتاج الفعلي اربط Supabase Auth وقيّد السياسات، وفعّل تشفير كلمات المرور.", en: "Security note: policies are open to the anon key for easy setup. For production, enable Supabase Auth, restrict policies, and hash passwords." },
   sync_connected_ok: { ar: "تم الاتصال والمزامنة — البيانات الآن موحدة بين الأجهزة ✓", en: "Connected & synced — data is now unified across devices ✓" },
+
+  // ── المصادقة السحابية (المرحلة الثانية) ──
+  working: { ar: "جارٍ العمل...", en: "Working..." },
+  auth_cloud_on: { ar: "متصل بالسحابة — كلمات المرور محمية ومشفّرة عبر Supabase Auth", en: "Cloud connected — passwords are hashed & protected by Supabase Auth" },
+  cloud_unreachable: { ar: "تعذر الوصول إلى السحابة — تحقق من الاتصال", en: "Could not reach the cloud — check your connection" },
+  signup_failed: { ar: "تعذر إنشاء الحساب — حاول مجددًا", en: "Could not create the account — try again" },
+  rate_limited: { ar: "محاولات كثيرة — انتظر لحظة ثم أعد المحاولة", en: "Too many attempts — please wait a moment and retry" },
+  no_profile: { ar: "تم التحقق لكن لا يوجد ملف حساب — راجع المشرف", en: "Verified but no account profile found — contact an admin" },
+  pw_cloud_note: { ar: "محمية عبر Supabase Auth — لا يمكن عرضها (وهذا هو المطلوب أمنيًا)", en: "Protected by Supabase Auth — cannot be displayed (by design)" },
   sync_pulled: { ar: "تم سحب أحدث البيانات من السحابة ✓", en: "Pulled latest data from the cloud ✓" },
   sync_pushed: { ar: "تم رفع بيانات هذا الجهاز إلى السحابة ✓", en: "Pushed this device's data to the cloud ✓" },
 };

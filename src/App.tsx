@@ -8,6 +8,9 @@ import {
 } from "./data/seed";
 import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
 import { registerCustomColleges, registerCustomDepts, registerCustomUniversities } from "./data/hierarchy";
+import {
+  isCloudAuth, loginAccount, logoutAccount, registerAccount,
+} from "./lib/authProvider";
 import { clearConfig, getConfig, resetClient, setConfig, testConnection, type SyncConfig } from "./lib/supabaseClient";
 import { initialSync, push, type CollectionName } from "./lib/syncService";
 import { I18nProvider } from "./i18n";
@@ -211,9 +214,20 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }, [screen]);
 
-  /* ── المصادقة ── */
-  const login = (email: string, password: string): string | null => {
-    const acc = accounts.find((a) => a.email === email);
+  /* ── المصادقة: محليًا أو عبر Supabase Auth عند الاتصال ── */
+  const login = async (email: string, password: string): Promise<string | null> => {
+    const mail = email.trim().toLowerCase();
+
+    if (isCloudAuth()) {
+      const r = await loginAccount(mail, password, accounts);
+      if (!r.ok) return r.error;
+      setUser(r.account);
+      save(KEYS.user, r.account.email);
+      setScreen("home");
+      return null;
+    }
+
+    const acc = accounts.find((a) => a.email === mail);
     if (!acc || acc.password !== password) return "wrong_creds";
     setUser(acc);
     save(KEYS.user, acc.email);
@@ -221,17 +235,30 @@ export default function App() {
     return null;
   };
 
-  const register = (acc: Account): string | null => {
-    if (accounts.some((a) => a.email === acc.email)) return "email_exists";
-    if (acc.email === ADMIN_SEED.email) return "email_exists";
-    setAccounts((prev) => [...prev, acc]);
-    setUser(acc);
-    save(KEYS.user, acc.email);
+  const register = async (acc: Account): Promise<string | null> => {
+    const mail = acc.email.trim().toLowerCase();
+    if (accounts.some((a) => a.email.toLowerCase() === mail)) return "email_exists";
+
+    if (isCloudAuth()) {
+      const r = await registerAccount({ ...acc, email: mail }, accounts);
+      if (!r.ok) return r.error;
+      setAccounts((prev) => [...prev, r.account]);
+      setUser(r.account);
+      save(KEYS.user, r.account.email);
+      setScreen("home");
+      return null;
+    }
+
+    if (mail === ADMIN_SEED.email) return "email_exists";
+    setAccounts((prev) => [...prev, { ...acc, email: mail }]);
+    setUser({ ...acc, email: mail });
+    save(KEYS.user, mail);
     setScreen("home");
     return null;
   };
 
   const logout = () => {
+    void logoutAccount();
     setUser(null);
     save(KEYS.user, null);
     setScreen("auth");

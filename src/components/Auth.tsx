@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { Account } from "../types";
 import { useI18n } from "../i18n";
 import { allUniversities, collegesOf, findCollege, yearOptions } from "../data/hierarchy";
+import { isCloudAuth } from "../lib/authProvider";
 import EcgLine from "./EcgLine";
 import { KiurWordmark, LangSwitch, SearchableSelect } from "./ui";
 import { ClipboardIcon, GradCapIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
@@ -9,8 +10,8 @@ import { ClipboardIcon, GradCapIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon }
 interface AuthProps {
   accounts: Account[];
   stats: { questions: number; exams: number; students: number };
-  onLogin: (email: string, password: string) => string | null;
-  onRegister: (acc: Account) => string | null;
+  onLogin: (email: string, password: string) => string | null | Promise<string | null>;
+  onRegister: (acc: Account) => string | null | Promise<string | null>;
 }
 
 export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps) {
@@ -42,29 +43,38 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
     setTimeout(() => setShaking(false), 500);
   };
 
-  const submit = (e: FormEvent) => {
+  const [busy, setBusy] = useState(false);
+  const cloud = isCloudAuth();
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     setError(null);
-    if (mode === "login") {
-      const err = onLogin(email.trim().toLowerCase(), password);
-      if (err) fail(t(err));
-    } else {
-      if (!name.trim() || !email.trim() || password.length < 4 || !university || !college) {
-        fail(t("required_fields"));
-        return;
+    setBusy(true);
+    try {
+      if (mode === "login") {
+        const err = await onLogin(email.trim().toLowerCase(), password);
+        if (err) fail(t(err));
+      } else {
+        if (!name.trim() || !email.trim() || password.length < 4 || !university || !college) {
+          fail(t("required_fields"));
+          return;
+        }
+        const err = await onRegister({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role: "student",
+          university,
+          college,
+          department: department || undefined,
+          year,
+          createdAt: Date.now(),
+        });
+        if (err) fail(t(err));
       }
-      const err = onRegister({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        role: "student",
-        university,
-        college,
-        department: department || undefined,
-        year,
-        createdAt: Date.now(),
-      });
-      if (err) fail(t(err));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -241,10 +251,17 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 </p>
               )}
 
-              <button type="submit" className="btn-primary w-full py-3 text-base">
+              <button type="submit" disabled={busy} className="btn-primary w-full py-3 text-base disabled:opacity-60">
                 <GradCapIcon size={18} />
-                {mode === "login" ? t("signin") : t("create_account")}
+                {busy ? t("working") : mode === "login" ? t("signin") : t("create_account")}
               </button>
+
+              {cloud && (
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-moss-700">
+                  <ShieldIcon size={13} />
+                  {t("auth_cloud_on")}
+                </p>
+              )}
             </form>
 
             <p className="mt-5 text-center text-xs text-ink-soft">

@@ -114,19 +114,29 @@ export default function AccountsLog({ accounts }: { accounts: Account[] }) {
                   </td>
                   <td className="px-3 py-3 text-xs" dir="ltr">{a.email}</td>
                   <td className="px-3 py-3">
-                    <span className="inline-flex items-center gap-1.5">
-                      <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs" dir="ltr">
-                        {isRevealed ? a.password : "••••••"}
-                      </code>
-                      <button
-                        onClick={() => toggleReveal(a.email)}
-                        className="rounded p-1 text-ink-soft transition-colors hover:text-pulse-700"
-                        title={t("show_hide")}
-                        aria-label={t("show_hide")}
+                    {a.password ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs" dir="ltr">
+                          {isRevealed ? a.password : "••••••"}
+                        </code>
+                        <button
+                          onClick={() => toggleReveal(a.email)}
+                          className="rounded p-1 text-ink-soft transition-colors hover:text-pulse-700"
+                          title={t("show_hide")}
+                          aria-label={t("show_hide")}
+                        >
+                          {isRevealed ? <XIcon size={13} /> : <EyeIcon size={13} />}
+                        </button>
+                      </span>
+                    ) : (
+                      <span
+                        className="inline-flex max-w-52 items-center gap-1.5 text-[11px] font-semibold text-moss-700"
+                        title={t("pw_cloud_note")}
                       >
-                        {isRevealed ? <XIcon size={13} /> : <EyeIcon size={13} />}
-                      </button>
-                    </span>
+                        <ShieldIcon size={13} className="shrink-0" />
+                        {t("pw_cloud_note")}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-3">
                     <span className={"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold " + meta.cls}>
