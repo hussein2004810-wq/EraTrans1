@@ -12,7 +12,7 @@ import {
   isCloudAuth, loginAccount, logoutAccount, registerAccount,
 } from "./lib/authProvider";
 import { clearConfig, getConfig, resetClient, setConfig, testConnection, type SyncConfig } from "./lib/supabaseClient";
-import { initialSync, push, type CollectionName } from "./lib/syncService";
+import { initialSync, probeWrite, push, type CollectionName, type PushResult } from "./lib/syncService";
 import { I18nProvider } from "./i18n";
 import Auth from "./components/Auth";
 import StudentDashboard from "./student/StudentDashboard";
@@ -21,6 +21,24 @@ import TakeExam from "./exam/TakeExam";
 import ExamResults from "./exam/ExamResults";
 
 type Screen = "auth" | "home" | "exam" | "results";
+
+/**
+ * تشخيص فشل الكتابة إلى السحابة — يحوّل رسالة الخادم إلى إرشاد عملي:
+ * 42P01 = جداول ناقصة · RLS/42501 = سياسات تمنع الكتابة · 22P02 = شكل جدول مختلف
+ */
+function syncFailHint(r: PushResult | undefined, failed: number, total: number): string {
+  const base = `تعذّر رفع ${failed} من ${total} مجموعات إلى السحابة. `;
+  const msg = r?.error ?? "";
+  if (r?.code === "42P01" || msg.includes("does not exist"))
+    return base + "الجداول غير موجودة — افتح SQL Editor في Supabase وشغّل محتوى supabase/schema.sql ثم أعد الرفع.";
+  if (r?.code === "42501" || msg.includes("row-level security") || msg.includes("permission denied"))
+    return base + "سياسات الأمان (RLS) تمنع الكتابة — افتح SQL Editor وشغّل supabase/fix_access.sql ثم أعد الرفع.";
+  if (r?.code === "22P02" || msg.includes("invalid input syntax"))
+    return base + "شكل الجداول مختلف عن المطلوب — احذف جداول kiur_* من Supabase وأعد تشغيل supabase/schema.sql.";
+  if (msg.includes("Failed to fetch") || msg.includes("fetch"))
+    return base + "انقطع الاتصال — تحقق من الإنترنت ثم أعد المحاولة.";
+  return base + "تفاصيل الخطأ: " + (msg || "غير معروف");
+}
 
 function initOnce<T>(key: string, seed: T): T {
   const existing = load<T | null>(key, null);
@@ -91,14 +109,14 @@ export default function App() {
   useEffect(() => { if (cloudOn) void push("audit", audit); }, [audit, cloudOn]);
 
   /** سحب البيانات من السحابة وبذر الجداول الفارغة بالبيانات المحلية */
-  const loadFromCloud = useCallback(async () => {
-    if (!getConfig()) return;
+  const loadFromCloud = useCallback(async (): Promise<number> => {
+    if (!getConfig()) return 0;
     const local: Record<CollectionName, unknown[]> = {
       accounts, exams, questions, attempts, shares,
       universities: customUnis, colleges: customColleges, depts: customDepts,
       vignettes, vignetteAudit, audit,
     };
-    const snap = await initialSync(local);
+    const { data: snap, failed } = await initialSync(local);
     if (snap.accounts) setAccounts(snap.accounts as Account[]);
     if (snap.exams) setExams(snap.exams as ExamDef[]);
     if (snap.questions) setQuestions(snap.questions as Question[]);
@@ -111,6 +129,7 @@ export default function App() {
     if (snap.vignetteAudit) setVignetteAudit(snap.vignetteAudit as VignetteAuditEntry[]);
     if (snap.audit) setAudit(snap.audit as AuditEntry[]);
     setSyncReady(true);
+    return failed;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -131,7 +150,19 @@ export default function App() {
     }
     setSbConfig(cfg);
     setSyncReady(false);
-    await loadFromCloud();
+    const failed = await loadFromCloud();
+    if (failed > 0) {
+      /* تم الاتصال لكن بذر السحابة لم يكتمل — نوضح السبب بدل ادعاء النجاح */
+      const probe = await probeWrite();
+      return {
+        ok: true,
+        message:
+          `تم الاتصال بالقاعدة، لكن تعذّر رفع ${failed} مجموعات. ` +
+          (probe.ok
+            ? "أعد المحاولة بزر «رفع بيانات هذا الجهاز»."
+            : syncFailHint(probe, failed, 11)),
+      };
+    }
     return { ok: true, message: "sync_connected_ok" };
   };
 
@@ -158,13 +189,23 @@ export default function App() {
       vignettes, vignetteAudit, audit,
     };
     let failed = 0;
+    let firstErr: PushResult | undefined;
     for (const n of names) {
-      const ok = await push(n, data[n]);
-      if (!ok) failed++;
+      const r = await push(n, data[n]);
+      if (!r.ok) {
+        failed++;
+        if (!firstErr) firstErr = r;
+      }
     }
-    return failed === 0
-      ? { ok: true, message: "sync_pushed" }
-      : { ok: false, message: `sync_failed_${failed}` };
+    if (failed === 0) return { ok: true, message: "sync_pushed" };
+    return { ok: false, message: syncFailHint(firstErr, failed, names.length) };
+  };
+
+  /** فحص صلاحية الكتابة — يميّز بين جداول ناقصة وسياسات RLS مانعة */
+  const handleProbeWrite = async () => {
+    const r = await probeWrite();
+    if (r.ok) return { ok: true, message: "sync_write_ok" };
+    return { ok: false, message: syncFailHint(r, 1, 1).replace("تعذّر رفع 1 من 1 مجموعات إلى السحابة. ", "الكتابة إلى السحابة غير متاحة. ") };
   };
 
   const [user, setUser] = useState<Account | null>(() => {
@@ -635,6 +676,7 @@ export default function App() {
         onDisconnect={handleDisconnect}
         onSyncNow={handleSyncNow}
         onPushAll={handlePushAll}
+        onProbeWrite={handleProbeWrite}
         onLogout={logout}
       />
     );

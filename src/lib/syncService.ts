@@ -25,6 +25,9 @@ const TABLES: Record<CollectionName, string> = {
   audit: "kiur_audit",
 };
 
+/** صف فحص صلاحية الكتابة — يُستبعد دائمًا من النتائج */
+const PROBE_ID = "__kiur_probe__";
+
 interface Row<T> {
   id: string;
   data: T;
@@ -36,13 +39,22 @@ function keyOf(item: unknown): string {
   return it.id ?? it.email ?? "";
 }
 
-/** سحب كل صفوف مجموعة من السحابة */
+/** نتيجة عملية كتابة مع تشخيص الخطأ */
+export interface PushResult {
+  ok: boolean;
+  error?: string;
+  code?: string;
+}
+
+/** سحب كل صفوف مجموعة من السحابة (مع استبعاد صف الفحص إن وُجد) */
 export async function pull<T>(name: CollectionName): Promise<T[] | null> {
   const sb = getClient();
   if (!sb) return null;
   const { data, error } = await sb.from(TABLES[name]).select("id, data, updated_at");
   if (error) return null;
-  return (data as Row<T>[]).map((r) => r.data);
+  return (data as Row<T>[])
+    .filter((r) => r.id !== PROBE_ID)
+    .map((r) => r.data);
 }
 
 /**
@@ -50,10 +62,11 @@ export async function pull<T>(name: CollectionName): Promise<T[] | null> {
  * أمان: تُجرَّد كلمات المرور من الحسابات قبل إرسالها إلى السحابة —
  * المصادقة الحقيقية تعيش في Supabase Auth وليس في قاعدة البيانات.
  */
-export async function push<T>(name: CollectionName, items: T[]): Promise<boolean> {
+export async function push<T>(name: CollectionName, items: T[]): Promise<PushResult> {
   const sb = getClient();
-  if (!sb) return false;
-  if (items.length === 0) return true;
+  if (!sb) return { ok: false, error: "no-client" };
+  if (items.length === 0) return { ok: true };
+
   const safe: unknown[] =
     name === "accounts"
       ? (items as { email?: string; password?: string }[])
@@ -65,9 +78,18 @@ export async function push<T>(name: CollectionName, items: T[]): Promise<boolean
             return rest;
           })
       : items;
+  if (safe.length === 0) return { ok: true };
+
   const rows: Row<T>[] = (safe as T[]).map((it) => ({ id: keyOf(it), data: it }));
   const { error } = await sb.from(TABLES[name]).upsert(rows, { onConflict: "id" });
-  return !error;
+  if (error) {
+    return {
+      ok: false,
+      error: error.message,
+      code: (error as { code?: string }).code,
+    };
+  }
+  return { ok: true };
 }
 
 /** حذف صف واحد */
@@ -84,6 +106,27 @@ export async function clearTable(name: CollectionName): Promise<boolean> {
   if (!sb) return false;
   const { error } = await sb.from(TABLES[name]).delete().neq("id", "");
   return !error;
+}
+
+/**
+ * فحص صلاحية الكتابة إلى السحابة: محاولة upsert لصف فحص ثم حذفه.
+ * يميّز بين: جداول ناقصة، سياسات RLS مانعة، أو مشكلة أخرى.
+ */
+export async function probeWrite(): Promise<PushResult> {
+  const sb = getClient();
+  if (!sb) return { ok: false, error: "no-client" };
+  const { error: upErr } = await sb
+    .from("kiur_accounts")
+    .upsert({ id: PROBE_ID, data: { __probe: true } }, { onConflict: "id" });
+  if (upErr) {
+    return {
+      ok: false,
+      error: upErr.message,
+      code: (upErr as { code?: string }).code,
+    };
+  }
+  await sb.from("kiur_accounts").delete().eq("id", PROBE_ID);
+  return { ok: true };
 }
 
 export interface FullSnapshot {
@@ -115,20 +158,25 @@ export async function pullAll(): Promise<FullSnapshot> {
  * مزامنة أولية عند الاتصال:
  * - الجدول الفارغ في السحابة ← يُملأ بالبيانات المحلية (بذر).
  * - الجدول المعمور ← تُعتمد بيانات السحابة.
+ * ترجع البيانات وعدد مجموعات البذر التي فشلت كتابتها.
  */
-export async function initialSync(local: Record<CollectionName, unknown[]>): Promise<Partial<Record<CollectionName, unknown[]>>> {
+export async function initialSync(
+  local: Record<CollectionName, unknown[]>
+): Promise<{ data: Partial<Record<CollectionName, unknown[]>>; failed: number }> {
   const snap = await pullAll();
   const out: Partial<Record<CollectionName, unknown[]>> = {};
+  let failed = 0;
   const names = Object.keys(TABLES) as CollectionName[];
   for (const n of names) {
     const cloud = snap[n];
     if (cloud === null) continue; // خطأ قراءة — نتجاهل هذه المجموعة
     if (cloud.length === 0) {
-      await push(n, local[n]);
+      const r = await push(n, local[n]);
+      if (!r.ok) failed++;
       out[n] = local[n];
     } else {
       out[n] = cloud;
     }
   }
-  return out;
+  return { data: out, failed };
 }

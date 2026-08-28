@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 import type { SyncConfig } from "../lib/supabaseClient";
 import {
@@ -11,17 +11,35 @@ interface Props {
   onDisconnect: () => void;
   onSyncNow: () => Promise<{ ok: boolean; message: string }>;
   onPushAll: () => Promise<{ ok: boolean; message: string }>;
+  onProbeWrite: () => Promise<{ ok: boolean; message: string }>;
 }
 
 /** لوحة المزامنة السحابية — يديرها المالك لربط المنصة بين الأجهزة */
-export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, onPushAll }: Props) {
+export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, onPushAll, onProbeWrite }: Props) {
   const { t } = useI18n();
   const [url, setUrl] = useState(config?.url ?? "");
   const [key, setKey] = useState(config?.anonKey ?? "");
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [probe, setProbe] = useState<{ ok: boolean; text: string } | null>(null);
 
   const connected = !!config;
+
+  /* فحص صلاحية الكتابة تلقائيًا عند الاتصال — يشخّص مبكرًا سبب فشل الرفع */
+  useEffect(() => {
+    if (!connected) {
+      setProbe(null);
+      return;
+    }
+    let live = true;
+    onProbeWrite().then((r) => {
+      if (live) setProbe({ ok: r.ok, text: r.message });
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
 
   const act = async (which: "connect" | "sync" | "push") => {
     setBusy(which);
@@ -69,6 +87,29 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
             {connected ? t("sync_online") : t("sync_offline")}
           </span>
         </div>
+
+        {/* تشخيص صلاحية الكتابة — يكشف مبكرًا جداول ناقصة أو سياسات RLS مانعة */}
+        {connected && probe && (
+          <div
+            className={
+              "anim-fade-up flex items-start gap-2.5 border-b px-5 py-3 text-xs leading-relaxed " +
+              (probe.ok
+                ? "border-line bg-moss-100/50 text-moss-700"
+                : "border-line bg-blood-100/60 text-blood-700")
+            }
+          >
+            {probe.ok ? <CheckIcon size={15} className="mt-0.5 shrink-0" /> : <InfoIcon size={15} className="mt-0.5 shrink-0" />}
+            <p className="flex-1">{probe.text}</p>
+            <button
+              onClick={() => {
+                onProbeWrite().then((r) => setProbe({ ok: r.ok, text: r.message }));
+              }}
+              className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1 text-[11px] font-bold text-ink-soft transition-colors hover:border-pulse-500 hover:text-pulse-700"
+            >
+              {t("sync_probe")}
+            </button>
+          </div>
+        )}
 
         <div className="grid gap-4 p-5 lg:grid-cols-2">
           <div className="space-y-3">

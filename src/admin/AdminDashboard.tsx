@@ -65,6 +65,7 @@ interface Props {
   onDisconnect: () => void;
   onSyncNow: () => Promise<{ ok: boolean; message: string }>;
   onPushAll: () => Promise<{ ok: boolean; message: string }>;
+  onProbeWrite: () => Promise<{ ok: boolean; message: string }>;
   onLogout: () => void;
 }
 
@@ -273,6 +274,7 @@ export default function AdminDashboard(props: Props) {
               onDisconnect={props.onDisconnect}
               onSyncNow={props.onSyncNow}
               onPushAll={props.onPushAll}
+              onProbeWrite={props.onProbeWrite}
             />
           )}
           {activeTab === "stress" && isOwner && <StressTest questions={questions} exams={exams} />}

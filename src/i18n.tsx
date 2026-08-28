@@ -551,6 +551,8 @@ const STR: Record<string, BiText> = {
   pw_cloud_note: { ar: "محمية عبر Supabase Auth — لا يمكن عرضها (وهذا هو المطلوب أمنيًا)", en: "Protected by Supabase Auth — cannot be displayed (by design)" },
   sync_pulled: { ar: "تم سحب أحدث البيانات من السحابة ✓", en: "Pulled latest data from the cloud ✓" },
   sync_pushed: { ar: "تم رفع بيانات هذا الجهاز إلى السحابة ✓", en: "Pushed this device's data to the cloud ✓" },
+  sync_write_ok: { ar: "الكتابة إلى السحابة متاحة ✓ — الرفع سيعمل الآن", en: "Cloud writes are permitted ✓ — pushing will work now" },
+  sync_probe: { ar: "إعادة الفحص", en: "Re-probe" },
 };
 
 interface I18nCtx {
