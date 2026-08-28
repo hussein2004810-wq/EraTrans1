@@ -214,17 +214,32 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }, [screen]);
 
-  /* ── المصادقة: محليًا أو عبر Supabase Auth عند الاتصال ── */
+  /* ── المصادقة الهجينة: سحابية أولًا، ومحلية احتياطًا كي تعمل المنصة من الصندوق ── */
   const login = async (email: string, password: string): Promise<string | null> => {
     const mail = email.trim().toLowerCase();
 
     if (isCloudAuth()) {
       const r = await loginAccount(mail, password, accounts);
-      if (!r.ok) return r.error;
-      setUser(r.account);
-      save(KEYS.user, r.account.email);
-      setScreen("home");
-      return null;
+      if (r.ok) {
+        setUser(r.account);
+        save(KEYS.user, r.account.email);
+        setScreen("home");
+        return null;
+      }
+      /*
+       * تعذّر الدخول السحابي (Auth غير مهيأ بعد أو حساب غير معروف) —
+       * نعود للحسابات التجريبية المحلية كي تبقى المنصة قابلة للتجربة فور النشر.
+       */
+      const demo = ACCOUNTS_SEED.find(
+        (a) => a.email.toLowerCase() === mail && a.password === password
+      );
+      if (demo) {
+        setUser(demo);
+        save(KEYS.user, demo.email);
+        setScreen("home");
+        return null;
+      }
+      return r.error;
     }
 
     const acc = accounts.find((a) => a.email === mail);
@@ -241,12 +256,17 @@ export default function App() {
 
     if (isCloudAuth()) {
       const r = await registerAccount({ ...acc, email: mail }, accounts);
-      if (!r.ok) return r.error;
-      setAccounts((prev) => [...prev, r.account]);
-      setUser(r.account);
-      save(KEYS.user, r.account.email);
-      setScreen("home");
-      return null;
+      if (r.ok) {
+        setAccounts((prev) => [...prev, r.account]);
+        setUser(r.account);
+        save(KEYS.user, r.account.email);
+        setScreen("home");
+        return null;
+      }
+      /*
+       * فشل التسجيل السحابي (Auth غير مهيأ بعد) — ننشئ الحساب محليًا
+       * حتى لا تتعطل التجربة، ويُرحَّل للسحابة عند اكتمال تهيئة Auth.
+       */
     }
 
     if (mail === ADMIN_SEED.email) return "email_exists";

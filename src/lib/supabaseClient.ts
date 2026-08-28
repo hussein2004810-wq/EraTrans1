@@ -7,10 +7,18 @@ export interface SyncConfig {
 
 const CONFIG_KEY = "kiur.supabase.config";
 
-/* متغيرات البناء (Vercel / Netlify) — تُقرأ مرة واحدة عند التحميل */
+/*
+ * بيانات مشروع Supabase الحقيقية الخاصة بمنصة KIUR.
+ * المفتاح من نوع publishable/anon — مخصص للشحن مع كود المتصفح بأمان،
+ * والحماية الفعلية للبيانات تأتي من سياسات RLS وليس من سرّية المفتاح.
+ */
+const DEFAULT_URL = "https://wveyvsjxgfcxhvyczudo.supabase.co";
+const DEFAULT_KEY = "sb_publishable_PcSjGUw5PSF_Pz98y41hAQ_Tk4Gjq9b";
+
+/* متغيرات البناء (Vercel / Netlify) — تتقدم على الافتراضية إن وُجدت */
 const ENV = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
-const ENV_URL = ENV.VITE_SUPABASE_URL;
-const ENV_KEY = ENV.VITE_SUPABASE_ANON_KEY ?? ENV.VITE_SUPABASE_PUBLISHABLE_KEY;
+const ENV_URL = ENV.VITE_SUPABASE_URL ?? DEFAULT_URL;
+const ENV_KEY = ENV.VITE_SUPABASE_ANON_KEY ?? ENV.VITE_SUPABASE_PUBLISHABLE_KEY ?? DEFAULT_KEY;
 
 export function hasEnvConfig(): boolean {
   return !!ENV_URL && !!ENV_KEY;
