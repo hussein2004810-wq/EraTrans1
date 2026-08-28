@@ -180,7 +180,9 @@ export default function App() {
     return { ok: true, message: "sync_pulled" };
   };
 
-  const handlePushAll = async () => {
+  const handlePushAll = async (
+    onProgress?: (done: number, total: number, name: string, ok: boolean) => void
+  ) => {
     const names: CollectionName[] = [
       "accounts", "exams", "questions", "attempts", "shares",
       "universities", "colleges", "depts", "vignettes", "vignetteAudit", "audit",
@@ -192,8 +194,11 @@ export default function App() {
     };
     let failed = 0;
     let firstErr: PushResult | undefined;
+    let i = 0;
     for (const n of names) {
       const r = await push(n, data[n]);
+      i++;
+      onProgress?.(i, names.length, n, r.ok);
       if (!r.ok) {
         failed++;
         if (!firstErr) firstErr = r;
