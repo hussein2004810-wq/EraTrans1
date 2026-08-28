@@ -100,14 +100,6 @@ export async function removeRow(name: CollectionName, id: string): Promise<boole
   return !error;
 }
 
-/** مسح جدول كامل */
-export async function clearTable(name: CollectionName): Promise<boolean> {
-  const sb = getClient();
-  if (!sb) return false;
-  const { error } = await sb.from(TABLES[name]).delete().neq("id", "");
-  return !error;
-}
-
 /**
  * فحص صلاحية الكتابة إلى السحابة: محاولة upsert لصف فحص ثم حذفه.
  * يميّز بين: جداول ناقصة، سياسات RLS مانعة، أو مشكلة أخرى.

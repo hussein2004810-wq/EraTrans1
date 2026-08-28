@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account, Attempt, AuditEntry, CustomCollege, CustomDept, CustomUniversity, ExamDef, ExamResult,
   Lang, Question, SavedSession, ShareRequest, Vignette, VignetteAuditEntry,
@@ -14,11 +14,13 @@ import {
 import { clearConfig, getConfig, resetClient, setConfig, testConnection, type SyncConfig } from "./lib/supabaseClient";
 import { initialSync, probeWrite, push, type CollectionName, type PushResult } from "./lib/syncService";
 import { I18nProvider } from "./i18n";
+import { ToastProvider } from "./components/Toast";
 import Auth from "./components/Auth";
-import StudentDashboard from "./student/StudentDashboard";
-import AdminDashboard from "./admin/AdminDashboard";
-import TakeExam from "./exam/TakeExam";
-import ExamResults from "./exam/ExamResults";
+/* تقسيم الحزمة: الشاشات الثقيلة تُحمَّل عند الطلب فتصغر حزمة الدخول الأولى */
+const StudentDashboard = lazy(() => import("./student/StudentDashboard"));
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+const TakeExam = lazy(() => import("./exam/TakeExam"));
+const ExamResults = lazy(() => import("./exam/ExamResults"));
 
 type Screen = "auth" | "home" | "exam" | "results";
 
@@ -699,5 +701,33 @@ export default function App() {
     );
   }
 
-  return <I18nProvider lang={lang} setLang={setLang}>{view}</I18nProvider>;
+  return (
+    <I18nProvider lang={lang} setLang={setLang}>
+      <ToastProvider>
+        <Suspense fallback={<ScreenLoader />}>{view}</Suspense>
+      </ToastProvider>
+    </I18nProvider>
+  );
+}
+
+/** مؤشر تحميل للشاشات المُحمَّلة كسولًا — يحافظ على الهوية البصرية */
+function ScreenLoader() {
+  return (
+    <div className="grid min-h-[60vh] place-items-center">
+      <div className="flex flex-col items-center gap-3">
+        <svg viewBox="0 0 64 64" className="h-14 w-14 animate-pulse">
+          <rect width="64" height="64" rx="14" fill="#0a211d" />
+          <path
+            d="M8 34h12l4-10 8 20 6-14 4 4h14"
+            fill="none"
+            stroke="#7ed4be"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <p className="font-display text-sm font-bold tracking-wide text-pulse-700">KIUR</p>
+      </div>
+    </div>
+  );
 }

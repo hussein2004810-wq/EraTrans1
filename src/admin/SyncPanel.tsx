@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 import type { SyncConfig } from "../lib/supabaseClient";
+import { useToast } from "../components/Toast";
 import {
   CheckIcon, DownloadIcon, GlobeIcon, InfoIcon, KeyIcon, RefreshIcon, UploadIcon, XIcon,
 } from "../components/icons";
@@ -17,6 +18,7 @@ interface Props {
 /** لوحة المزامنة السحابية — يديرها المالك لربط المنصة بين الأجهزة */
 export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, onPushAll, onProbeWrite }: Props) {
   const { t } = useI18n();
+  const toast = useToast();
   const [url, setUrl] = useState(config?.url ?? "");
   const [key, setKey] = useState(config?.anonKey ?? "");
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,7 +54,9 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
             ? await onSyncNow()
             : await onPushAll();
       /* الرسائل قد تكون مفاتيح ترجمة أو نصًا جاهزًا */
-      setMsg({ ok: r.ok, text: t(r.message) !== r.message ? t(r.message) : r.message });
+      const text = t(r.message) !== r.message ? t(r.message) : r.message;
+      setMsg({ ok: r.ok, text });
+      toast.push(text, r.ok ? "success" : "error");
     } finally {
       setBusy(null);
     }
