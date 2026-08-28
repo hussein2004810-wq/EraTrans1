@@ -2,7 +2,14 @@
 --  KIUR — سياسات RLS منفصلة (SELECT/INSERT/UPDATE/DELETE) لكل جدول
 --  بديل عن سياسات FOR ALL المفتوحة من الترحيل الأول.
 --  supabase db push
+--  نسخة SQL Editor الحرفية (للمراجعة): supabase/policies_granular.sql
 -- ═══════════════════════════════════════════════════════════════
+
+-- امتيازات الجدول لمستوى anon (تغطي احتمال missing GRANT)
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon;
 
 DO $$
 DECLARE
