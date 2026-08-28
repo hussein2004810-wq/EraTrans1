@@ -517,6 +517,31 @@ const STR: Record<string, BiText> = {
   confirm_del_college: { ar: "حذف هذه الكلية؟", en: "Delete this college?" },
   confirm_del_dept: { ar: "حذف هذا القسم؟", en: "Delete this department?" },
   saved_ok: { ar: "تم الحفظ ✓", en: "Saved ✓" },
+
+  // ── المزامنة السحابية (Supabase) ──
+  sync_tab: { ar: "المزامنة السحابية", en: "Cloud Sync" },
+  sync_title: { ar: "ربط المنصة بقاعدة بيانات مشتركة", en: "Connect the platform to a shared database" },
+  sync_not_connected: { ar: "غير متصلة — البيانات محلية على كل جهاز", en: "Not connected — data is local per device" },
+  sync_online: { ar: "متصلة", en: "Online" },
+  sync_offline: { ar: "وضع محلي", en: "Local mode" },
+  sync_url: { ar: "رابط المشروع (Project URL)", en: "Project URL" },
+  sync_key: { ar: "مفتاح anon العام", en: "Public anon key" },
+  sync_connect: { ar: "اتصال ومزامنة", en: "Connect & Sync" },
+  sync_testing: { ar: "جارٍ فحص الاتصال...", en: "Testing connection..." },
+  sync_disconnect: { ar: "فصل الاتصال", en: "Disconnect" },
+  sync_pull_now: { ar: "سحب أحدث البيانات من السحابة", en: "Pull latest from cloud" },
+  sync_push_all: { ar: "رفع بيانات هذا الجهاز للسحابة", en: "Push this device's data to cloud" },
+  sync_working: { ar: "جارٍ العمل...", en: "Working..." },
+  sync_push_hint: { ar: "استخدم «الرفع» عندما تكون بيانات هذا الجهاز هي الأحدث وتريد تعميمها. «السحب» يجلب آخر ما حفظه أي جهاز آخر.", en: "Use Push when this device has the newest data. Pull fetches what any other device last saved." },
+  sync_steps_title: { ar: "خطوات الإعداد (مرة واحدة)", en: "Setup steps (one-time)" },
+  sync_step1: { ar: "أنشئ مشروعًا مجانيًا على supabase.com واختر أقرب منطقة.", en: "Create a free project on supabase.com and pick the nearest region." },
+  sync_step2: { ar: "افتح SQL Editor والصق محتوى ملف supabase/schema.sql ثم نفّذه لإنشاء الجداول.", en: "Open SQL Editor, paste supabase/schema.sql and run it to create the tables." },
+  sync_step3: { ar: "انسخ Project URL و anon public key من إعدادات API وألصقهما هنا.", en: "Copy the Project URL and anon public key from API settings and paste them here." },
+  sync_step4: { ar: "اضغط «اتصال ومزامنة» — ستُبذر البيانات المحلية تلقائيًا ثم تتوحد بين كل الأجهزة.", en: "Press Connect & Sync — local data is seeded automatically, then unified across devices." },
+  sync_security_note: { ar: "تنبيه أمني: السياسات الحالية مفتوحة لمفتاح anon لتسهيل التشغيل. للإنتاج الفعلي اربط Supabase Auth وقيّد السياسات، وفعّل تشفير كلمات المرور.", en: "Security note: policies are open to the anon key for easy setup. For production, enable Supabase Auth, restrict policies, and hash passwords." },
+  sync_connected_ok: { ar: "تم الاتصال والمزامنة — البيانات الآن موحدة بين الأجهزة ✓", en: "Connected & synced — data is now unified across devices ✓" },
+  sync_pulled: { ar: "تم سحب أحدث البيانات من السحابة ✓", en: "Pulled latest data from the cloud ✓" },
+  sync_pushed: { ar: "تم رفع بيانات هذا الجهاز إلى السحابة ✓", en: "Pushed this device's data to the cloud ✓" },
 };
 
 interface I18nCtx {

@@ -32,13 +32,14 @@ interface Props {
   /** اللمحات السريرية التي نشرها المالك للطلبة */
   vignettes: { ar: string; en: string }[];
   shares: ShareRequest[];
+  accounts: Account[];
   onStart: (exam: ExamDef) => void;
   onResume: (session: SavedSession) => void;
   onLogout: () => void;
   onRequestShare: (examId: string, from: Account, to: Account) => string | null;
 }
 
-export default function StudentDashboard({ user, exams, questions, attempts, sessions, vignettes, shares, onStart, onResume, onLogout, onRequestShare }: Props) {
+export default function StudentDashboard({ user, exams, questions, attempts, sessions, vignettes, shares, accounts, onStart, onResume, onLogout, onRequestShare }: Props) {
   const { t, bi, lang } = useI18n();
   const [reviewAttempt, setReviewAttempt] = useState<Attempt | null>(null);
   /* اللمحات المنشورة من المالك، مع الرجوع للبذور إن لم تُنشر أي لمحة */
@@ -52,6 +53,24 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
   const [shareEmail, setShareEmail] = useState("");
   const [shareErr, setShareErr] = useState<string | null>(null);
   const [shareOk, setShareOk] = useState(false);
+
+  const submitShare = () => {
+    if (!shareExam) return;
+    setShareErr(null);
+    const email = shareEmail.trim().toLowerCase();
+    if (!email) return setShareErr(t("share_err_email"));
+    const to = accounts.find((a) => a.role === "student" && a.email.toLowerCase() === email);
+    if (!to) return setShareErr(t("share_err_notfound"));
+    if (to.email === user.email) return setShareErr(t("share_err_self"));
+    if (to.university === user.university) return setShareErr(t("share_err_same"));
+    const pending = shares.some(
+      (s) => s.examId === shareExam.id && s.toEmail === to.email && s.status === "pending"
+    );
+    if (pending) return setShareErr(t("share_err_dup"));
+    const err = onRequestShare(shareExam.id, user, to);
+    if (err) return setShareErr(t(err));
+    setShareOk(true);
+  };
 
   /* الاختبارات المُشاركة إلى هذا الطالب والمقبولة من المشرف */
   const sharedToMe = useMemo(
@@ -444,6 +463,52 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
       </footer>
 
       {reviewAttempt && <AttemptReviewModal attempt={reviewAttempt} bank={questions} onClose={() => setReviewAttempt(null)} />}
+
+      {/* ───── نافذة مشاركة الاختبار ───── */}
+      <Modal open={!!shareExam} onClose={() => setShareExam(null)}>
+        <div className="flex items-start justify-between">
+          <h3 className="font-display text-xl font-bold">{t("share_student_title")}</h3>
+          <button onClick={() => setShareExam(null)} className="rounded-lg p-1 text-ink-soft transition-colors hover:text-blood-600">
+            <XIcon size={18} />
+          </button>
+        </div>
+        {shareExam && (
+          <p className="mt-1 text-sm font-semibold text-pulse-700">{bi(shareExam.title)}</p>
+        )}
+
+        {shareOk ? (
+          <div className="anim-pop mt-4 rounded-xl border border-moss-600/40 bg-moss-100 p-4 text-center">
+            <CheckIcon size={26} className="mx-auto text-moss-700" />
+            <p className="mt-2 text-sm font-bold text-moss-700">{t("share_sent")}</p>
+            <button onClick={() => setShareExam(null)} className="btn-primary mt-4 w-full">
+              {t("close")}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-4">
+              <label className="lbl">{t("share_student_email")}</label>
+              <input
+                className="input"
+                dir="ltr"
+                type="email"
+                placeholder="student@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitShare()}
+              />
+            </div>
+            {shareErr && (
+              <p className="anim-shake mt-2 rounded-lg bg-blood-100 px-3 py-2 text-xs font-bold text-blood-700">{shareErr}</p>
+            )}
+            <p className="mt-3 rounded-lg bg-paper/70 p-3 text-xs leading-relaxed text-ink-soft">{t("share_student_note")}</p>
+            <button onClick={submitShare} className="btn-primary mt-4 w-full">
+              <ShareIcon size={16} />
+              {t("share_student_send")}
+            </button>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

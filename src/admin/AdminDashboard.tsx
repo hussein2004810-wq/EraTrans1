@@ -16,15 +16,17 @@ import AccountsLog from "./AccountsLog";
 import VignettesPanel from "./VignettesPanel";
 import CollegesPanel from "./CollegesPanel";
 import ShareRequests from "./ShareRequests";
+import SyncPanel from "./SyncPanel";
+import type { SyncConfig } from "../lib/supabaseClient";
 import {
-  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GradCapIcon, ImageIcon, InfoIcon, KeyIcon, LayersIcon,
+  AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, CrownIcon, DownloadIcon, EyeIcon, GaugeIcon, GlobeIcon, GradCapIcon, ImageIcon, InfoIcon, KeyIcon, LayersIcon,
   LogoutIcon, PlusIcon, SearchIcon, ShareIcon, ShieldIcon, SheetIcon, StethoIcon, TrashIcon, UploadIcon, UsersIcon, XIcon,
 } from "../components/icons";
 
 type Tab =
   | "overview" | "exams" | "questions" | "images" | "import"
   | "students" | "reports" | "export" | "audit" | "admins" | "stress"
-  | "colleges" | "accountsLog" | "vignettes" | "shares";
+  | "colleges" | "accountsLog" | "vignettes" | "shares" | "sync";
 
 interface Props {
   user: Account;
@@ -58,6 +60,11 @@ interface Props {
   onSaveAdmin: (acc: Account) => void;
   onDeleteAdmin: (email: string) => void;
   onDemoteAdmin: (email: string) => void;
+  syncConfig: SyncConfig | null;
+  onConnect: (cfg: SyncConfig) => Promise<{ ok: boolean; message: string }>;
+  onDisconnect: () => void;
+  onSyncNow: () => Promise<{ ok: boolean; message: string }>;
+  onPushAll: () => Promise<{ ok: boolean; message: string }>;
   onLogout: () => void;
 }
 
@@ -97,6 +104,7 @@ export default function AdminDashboard(props: Props) {
     { id: "colleges", label: t("colleges_tab"), icon: <GradCapIcon size={16} />, show: has("universities") },
     { id: "shares", label: t("shares_tab"), icon: <ShareIcon size={16} />, show: has("shares") || isOwner },
     { id: "accountsLog", label: t("accounts_log_tab"), icon: <KeyIcon size={16} />, show: has("accountsLog") },
+    { id: "sync", label: t("sync_tab"), icon: <GlobeIcon size={16} />, show: isOwner },
     { id: "stress", label: t("stress_tab"), icon: <GaugeIcon size={16} />, show: isOwner },
     { id: "admins", label: t("admins_tab"), icon: <CrownIcon size={16} />, show: isOwner },
   ];
@@ -258,6 +266,15 @@ export default function AdminDashboard(props: Props) {
             />
           )}
           {activeTab === "accountsLog" && <AccountsLog accounts={accounts} />}
+          {activeTab === "sync" && isOwner && (
+            <SyncPanel
+              config={props.syncConfig}
+              onConnect={props.onConnect}
+              onDisconnect={props.onDisconnect}
+              onSyncNow={props.onSyncNow}
+              onPushAll={props.onPushAll}
+            />
+          )}
           {activeTab === "stress" && isOwner && <StressTest questions={questions} exams={exams} />}
           {activeTab === "admins" && isOwner && (
             <AdminsPanel

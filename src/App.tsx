@@ -8,6 +8,8 @@ import {
 } from "./data/seed";
 import { grade, hashStr, KEYS, load, save, shuffleSeeded, uid } from "./lib/store";
 import { registerCustomColleges, registerCustomDepts, registerCustomUniversities } from "./data/hierarchy";
+import { clearConfig, getConfig, resetClient, setConfig, testConnection, type SyncConfig } from "./lib/supabaseClient";
+import { initialSync, push, type CollectionName } from "./lib/syncService";
 import { I18nProvider } from "./i18n";
 import Auth from "./components/Auth";
 import StudentDashboard from "./student/StudentDashboard";
@@ -66,6 +68,102 @@ export default function App() {
   useEffect(() => { save(KEYS.shares, shares); }, [shares]);
   useEffect(() => { save(KEYS.vignettes, vignettes); }, [vignettes]);
   useEffect(() => { save(KEYS.vignetteAudit, vignetteAudit); }, [vignetteAudit]);
+
+  /* ══ المزامنة السحابية (Supabase) ══ */
+  const [sbConfig, setSbConfig] = useState<SyncConfig | null>(() => getConfig());
+  /* لا ندفع للسحابة إلا بعد اكتمال السحب الأولي حتى لا نطمس بيانات جهاز آخر */
+  const [syncReady, setSyncReady] = useState<boolean>(() => !getConfig());
+  const cloudOn = !!sbConfig && syncReady;
+
+  useEffect(() => { if (cloudOn) void push("accounts", accounts); }, [accounts, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("exams", exams); }, [exams, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("questions", questions); }, [questions, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("attempts", attempts); }, [attempts, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("shares", shares); }, [shares, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("universities", customUnis); }, [customUnis, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("colleges", customColleges); }, [customColleges, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("depts", customDepts); }, [customDepts, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("vignettes", vignettes); }, [vignettes, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("vignetteAudit", vignetteAudit); }, [vignetteAudit, cloudOn]);
+  useEffect(() => { if (cloudOn) void push("audit", audit); }, [audit, cloudOn]);
+
+  /** سحب البيانات من السحابة وبذر الجداول الفارغة بالبيانات المحلية */
+  const loadFromCloud = useCallback(async () => {
+    if (!getConfig()) return;
+    const local: Record<CollectionName, unknown[]> = {
+      accounts, exams, questions, attempts, shares,
+      universities: customUnis, colleges: customColleges, depts: customDepts,
+      vignettes, vignetteAudit, audit,
+    };
+    const snap = await initialSync(local);
+    if (snap.accounts) setAccounts(snap.accounts as Account[]);
+    if (snap.exams) setExams(snap.exams as ExamDef[]);
+    if (snap.questions) setQuestions(snap.questions as Question[]);
+    if (snap.attempts) setAttempts(snap.attempts as Attempt[]);
+    if (snap.shares) setShares(snap.shares as ShareRequest[]);
+    if (snap.universities) setCustomUnis(snap.universities as CustomUniversity[]);
+    if (snap.colleges) setCustomColleges(snap.colleges as CustomCollege[]);
+    if (snap.depts) setCustomDepts(snap.depts as CustomDept[]);
+    if (snap.vignettes) setVignettes(snap.vignettes as Vignette[]);
+    if (snap.vignetteAudit) setVignetteAudit(snap.vignetteAudit as VignetteAuditEntry[]);
+    if (snap.audit) setAudit(snap.audit as AuditEntry[]);
+    setSyncReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (getConfig()) void loadFromCloud();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleConnect = async (cfg: SyncConfig) => {
+    resetClient();
+    setConfig(cfg);
+    const res = await testConnection(cfg);
+    if (!res.ok) {
+      clearConfig();
+      resetClient();
+      setSbConfig(null);
+      return res;
+    }
+    setSbConfig(cfg);
+    setSyncReady(false);
+    await loadFromCloud();
+    return { ok: true, message: "sync_connected_ok" };
+  };
+
+  const handleDisconnect = () => {
+    clearConfig();
+    resetClient();
+    setSbConfig(null);
+    setSyncReady(true);
+  };
+
+  const handleSyncNow = async () => {
+    await loadFromCloud();
+    return { ok: true, message: "sync_pulled" };
+  };
+
+  const handlePushAll = async () => {
+    const names: CollectionName[] = [
+      "accounts", "exams", "questions", "attempts", "shares",
+      "universities", "colleges", "depts", "vignettes", "vignetteAudit", "audit",
+    ];
+    const data: Record<CollectionName, unknown[]> = {
+      accounts, exams, questions, attempts, shares,
+      universities: customUnis, colleges: customColleges, depts: customDepts,
+      vignettes, vignetteAudit, audit,
+    };
+    let failed = 0;
+    for (const n of names) {
+      const ok = await push(n, data[n]);
+      if (!ok) failed++;
+    }
+    return failed === 0
+      ? { ok: true, message: "sync_pushed" }
+      : { ok: false, message: `sync_failed_${failed}` };
+  };
+
   const [user, setUser] = useState<Account | null>(() => {
     const email = load<string | null>(KEYS.user, null);
     if (!email) return null;
@@ -335,9 +433,9 @@ export default function App() {
   };
 
   /* ── مشاركة الاختبارات بين الجامعات ── */
-  const requestShare = (examId: string, from: Account, to: Account): void => {
+  const requestShare = (examId: string, from: Account, to: Account): string | null => {
     const exam = exams.find((e) => e.id === examId);
-    if (!exam) return;
+    if (!exam) return "share_err_notfound";
     const req: ShareRequest = {
       id: uid("sh-"),
       examId,
@@ -350,6 +448,7 @@ export default function App() {
     };
     setShares((prev) => [req, ...prev]);
     logAudit("create", "share", exam.title.ar || exam.title.en, `${from.email} → ${to.email}`);
+    return null;
   };
   const decideShare = (id: string, approve: boolean) => {
     const req = shares.find((s) => s.id === id);
@@ -484,6 +583,11 @@ export default function App() {
         onSaveAdmin={saveAdmin}
         onDeleteAdmin={deleteAdmin}
         onDemoteAdmin={demoteAdmin}
+        syncConfig={sbConfig}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+        onSyncNow={handleSyncNow}
+        onPushAll={handlePushAll}
         onLogout={logout}
       />
     );
@@ -496,9 +600,12 @@ export default function App() {
         attempts={attempts}
         sessions={sessions}
         vignettes={vignettes.filter((v) => v.published).map((v) => v.text)}
+        shares={shares}
+        accounts={accounts}
         onStart={startExam}
         onResume={resumeSession}
         onLogout={logout}
+        onRequestShare={requestShare}
       />
     );
   }
