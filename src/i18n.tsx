@@ -553,6 +553,32 @@ const STR: Record<string, BiText> = {
   sync_pushed: { ar: "تم رفع بيانات هذا الجهاز إلى السحابة ✓", en: "Pushed this device's data to the cloud ✓" },
   sync_write_ok: { ar: "الكتابة إلى السحابة متاحة ✓ — الرفع سيعمل الآن", en: "Cloud writes are permitted ✓ — pushing will work now" },
   sync_probe: { ar: "إعادة الفحص", en: "Re-probe" },
+
+  /* ── شريط التقدم التفصيلي للمزامنة ── */
+  sync_progress: { ar: "تقدّم الرفع — مجموعة بمجموعة", en: "Push progress — collection by collection" },
+  sync_coll_pushing: { ar: "جارٍ الرفع...", en: "Pushing..." },
+  sync_coll_pending: { ar: "بالانتظار", en: "Waiting" },
+  sync_coll_done: { ar: "تم", en: "Done" },
+  sync_coll_failed: { ar: "فشل", en: "Failed" },
+  sync_items: { ar: "سجل", en: "records" },
+  col_accounts: { ar: "الحسابات", en: "Accounts" },
+  col_exams: { ar: "الاختبارات", en: "Exams" },
+  col_questions: { ar: "بنك الأسئلة", en: "Question bank" },
+  col_attempts: { ar: "المحاولات والدرجات", en: "Attempts & grades" },
+  col_shares: { ar: "طلبات المشاركة", en: "Share requests" },
+  col_universities: { ar: "الجامعات المخصصة", en: "Custom universities" },
+  col_colleges: { ar: "الكليات المخصصة", en: "Custom colleges" },
+  col_depts: { ar: "الأقسام المخصصة", en: "Custom departments" },
+  col_vignettes: { ar: "اللمحات السريرية", en: "Clinical vignettes" },
+  col_vignette_audit: { ar: "سجل اللمحات", en: "Vignette log" },
+  col_audit: { ar: "سجل التدقيق", en: "Audit log" },
+
+  /* ── إشعارات العمليات ── */
+  toast_saved: { ar: "تم الحفظ ✓", en: "Saved ✓" },
+  toast_deleted: { ar: "تم الحذف", en: "Deleted" },
+  toast_imported: { ar: "تم الاستيراد بنجاح ✓", en: "Imported successfully ✓" },
+  toast_approved: { ar: "تم قبول الطلب ✓", en: "Request approved ✓" },
+  toast_rejected: { ar: "تم رفض الطلب", en: "Request rejected" },
 };
 
 interface I18nCtx {

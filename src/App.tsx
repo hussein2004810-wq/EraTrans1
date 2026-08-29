@@ -12,7 +12,7 @@ import {
   isCloudAuth, loginAccount, logoutAccount, registerAccount,
 } from "./lib/authProvider";
 import { clearConfig, getConfig, resetClient, setConfig, testConnection, type SyncConfig } from "./lib/supabaseClient";
-import { initialSync, probeWrite, push, type CollectionName, type PushResult } from "./lib/syncService";
+import { initialSync, probeWrite, push, SYNC_COLLECTIONS, type CollectionName, type PushResult } from "./lib/syncService";
 import { I18nProvider } from "./i18n";
 import { ToastProvider } from "./components/Toast";
 import Auth from "./components/Auth";
@@ -183,10 +183,7 @@ export default function App() {
   const handlePushAll = async (
     onProgress?: (done: number, total: number, name: string, ok: boolean) => void
   ) => {
-    const names: CollectionName[] = [
-      "accounts", "exams", "questions", "attempts", "shares",
-      "universities", "colleges", "depts", "vignettes", "vignetteAudit", "audit",
-    ];
+    const names = SYNC_COLLECTIONS;
     const data: Record<CollectionName, unknown[]> = {
       accounts, exams, questions, attempts, shares,
       universities: customUnis, colleges: customColleges, depts: customDepts,

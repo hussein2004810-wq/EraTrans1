@@ -11,6 +11,12 @@ export type CollectionName =
   | "accounts" | "exams" | "questions" | "attempts" | "shares"
   | "universities" | "colleges" | "depts" | "vignettes" | "vignetteAudit" | "audit";
 
+/** ترتيب الدفع الثابت — تعرضه واجهة شريط التقدم مجموعة بمجموعة */
+export const SYNC_COLLECTIONS: CollectionName[] = [
+  "accounts", "exams", "questions", "attempts", "shares",
+  "universities", "colleges", "depts", "vignettes", "vignetteAudit", "audit",
+];
+
 const TABLES: Record<CollectionName, string> = {
   accounts: "kiur_accounts",
   exams: "kiur_exams",

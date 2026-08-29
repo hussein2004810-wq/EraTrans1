@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Account, Attempt, AuditEntry, CustomCollege, CustomDept, CustomUniversity, ExamDef, PermKey, Question, SavedSession, ShareRequest, Vignette, VignetteAuditEntry } from "../types";
 import { useI18n } from "../i18n";
+import { useToast } from "../components/Toast";
 import { SUBJECTS } from "../data/seed";
 import { findCollege, findDept, findDeptInUniversity, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
@@ -64,7 +65,9 @@ interface Props {
   onConnect: (cfg: SyncConfig) => Promise<{ ok: boolean; message: string }>;
   onDisconnect: () => void;
   onSyncNow: () => Promise<{ ok: boolean; message: string }>;
-  onPushAll: () => Promise<{ ok: boolean; message: string }>;
+  onPushAll: (
+    onProgress?: (done: number, total: number, name: string, ok: boolean) => void
+  ) => Promise<{ ok: boolean; message: string }>;
   onProbeWrite: () => Promise<{ ok: boolean; message: string }>;
   onLogout: () => void;
 }
@@ -72,8 +75,35 @@ interface Props {
 export default function AdminDashboard(props: Props) {
   const { user, questions, exams, attempts, accounts, audit, onLogout } = props;
   const { t, bi, lang } = useI18n();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>("overview");
   const [presetImage, setPresetImage] = useState<string | null>(null);
+
+  /* إشعارات فورية عند كل حفظ/حذف — تغذية راجعة ملموسة لكل عملية */
+  const onSaveExamT = (e: ExamDef) => {
+    props.onSaveExam(e);
+    toast.push(t("toast_saved"), "success");
+  };
+  const onDeleteExamT = (id: string) => {
+    props.onDeleteExam(id);
+    toast.push(t("toast_deleted"), "info");
+  };
+  const onSaveQuestionT = (q: Question) => {
+    props.onSaveQuestion(q);
+    toast.push(t("toast_saved"), "success");
+  };
+  const onDeleteQuestionT = (id: string) => {
+    props.onDeleteQuestion(id);
+    toast.push(t("toast_deleted"), "info");
+  };
+  const onImportT = (qs: Question[]) => {
+    props.onImportQuestions(qs);
+    toast.push(t("toast_imported"), "success");
+  };
+  const onDeleteStudentT = (email: string) => {
+    props.onDeleteStudent(email);
+    toast.push(t("toast_deleted"), "info");
+  };
 
   const isOwner = user.role === "owner";
   const has = (p: PermKey) => isOwner || (user.perms ?? []).includes(p);
@@ -205,16 +235,16 @@ export default function AdminDashboard(props: Props) {
               exams={scopedExams}
               questions={questions}
               attempts={scopedAttempts}
-              onSave={props.onSaveExam}
-              onDelete={props.onDeleteExam}
+              onSave={onSaveExamT}
+              onDelete={onDeleteExamT}
               lockedUniversity={isOwner ? null : scopeUni}
             />
           )}
           {activeTab === "questions" && (
             <QuestionBank
               questions={questions}
-              onSave={props.onSaveQuestion}
-              onDelete={props.onDeleteQuestion}
+              onSave={onSaveQuestionT}
+              onDelete={onDeleteQuestionT}
               presetImage={presetImage}
               onPresetConsumed={() => setPresetImage(null)}
             />
@@ -227,9 +257,9 @@ export default function AdminDashboard(props: Props) {
               }}
             />
           )}
-          {activeTab === "import" && <ImportPanel questions={questions} onImport={props.onImportQuestions} />}
+          {activeTab === "import" && <ImportPanel questions={questions} onImport={onImportT} />}
           {activeTab === "students" && (
-            <StudentsRegistry students={scopedStudents} attempts={scopedAttempts} onDelete={props.onDeleteStudent} />
+            <StudentsRegistry students={scopedStudents} attempts={scopedAttempts} onDelete={onDeleteStudentT} />
           )}
           {activeTab === "reports" && <Reports exams={scopedExams} attempts={scopedAttempts} />}
           {activeTab === "export" && <ExportCenter exams={scopedExams} attempts={scopedAttempts} accounts={accounts} />}
@@ -263,7 +293,10 @@ export default function AdminDashboard(props: Props) {
               shares={props.shares}
               exams={exams}
               accounts={accounts}
-              onDecideShare={props.onDecideShare}
+              onDecideShare={(id, approve) => {
+                props.onDecideShare(id, approve);
+                toast.push(approve ? t("toast_approved") : t("toast_rejected"), approve ? "success" : "info");
+              }}
             />
           )}
           {activeTab === "accountsLog" && <AccountsLog accounts={accounts} />}

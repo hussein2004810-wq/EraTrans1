@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 import type { SyncConfig } from "../lib/supabaseClient";
+import { SYNC_COLLECTIONS } from "../lib/syncService";
 import { useToast } from "../components/Toast";
 import {
   CheckIcon, DownloadIcon, GlobeIcon, InfoIcon, KeyIcon, RefreshIcon, UploadIcon, XIcon,
@@ -11,9 +12,28 @@ interface Props {
   onConnect: (cfg: SyncConfig) => Promise<{ ok: boolean; message: string }>;
   onDisconnect: () => void;
   onSyncNow: () => Promise<{ ok: boolean; message: string }>;
-  onPushAll: () => Promise<{ ok: boolean; message: string }>;
+  onPushAll: (
+    onProgress?: (done: number, total: number, name: string, ok: boolean) => void
+  ) => Promise<{ ok: boolean; message: string }>;
   onProbeWrite: () => Promise<{ ok: boolean; message: string }>;
 }
+
+type CollStatus = "pending" | "done" | "failed";
+
+/** أسماء عرض المجموعات في شريط التقدم */
+const COLL_LABEL: Record<string, string> = {
+  accounts: "col_accounts",
+  exams: "col_exams",
+  questions: "col_questions",
+  attempts: "col_attempts",
+  shares: "col_shares",
+  universities: "col_universities",
+  colleges: "col_colleges",
+  depts: "col_depts",
+  vignettes: "col_vignettes",
+  vignetteAudit: "col_vignette_audit",
+  audit: "col_audit",
+};
 
 /** لوحة المزامنة السحابية — يديرها المالك لربط المنصة بين الأجهزة */
 export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, onPushAll, onProbeWrite }: Props) {
@@ -24,6 +44,7 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [probe, setProbe] = useState<{ ok: boolean; text: string } | null>(null);
+  const [prog, setProg] = useState<{ done: number; total: number; items: { name: string; status: CollStatus }[] } | null>(null);
 
   const connected = !!config;
 
@@ -46,13 +67,26 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
   const act = async (which: "connect" | "sync" | "push") => {
     setBusy(which);
     setMsg(null);
+    if (which === "push") startProgress();
     try {
       const r =
         which === "connect"
           ? await onConnect({ url: url.trim(), anonKey: key.trim() })
           : which === "sync"
             ? await onSyncNow()
-            : await onPushAll();
+            : await onPushAll((done, total, name, ok) =>
+                setProg((p) => {
+                  if (!p) return p;
+                  return {
+                    ...p,
+                    done,
+                    total,
+                    items: p.items.map((it) =>
+                      it.name === name ? { ...it, status: ok ? "done" : "failed" } : it
+                    ),
+                  };
+                })
+              );
       /* الرسائل قد تكون مفاتيح ترجمة أو نصًا جاهزًا */
       const text = t(r.message) !== r.message ? t(r.message) : r.message;
       setMsg({ ok: r.ok, text });
@@ -61,6 +95,14 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
       setBusy(null);
     }
   };
+
+  /** يبدأ شريط التقدم التفصيلي قبل الرفع */
+  const startProgress = () =>
+    setProg({
+      done: 0,
+      total: SYNC_COLLECTIONS.length,
+      items: SYNC_COLLECTIONS.map((n) => ({ name: n, status: "pending" as CollStatus })),
+    });
 
   return (
     <div className="space-y-5">
@@ -112,6 +154,56 @@ export default function SyncPanel({ config, onConnect, onDisconnect, onSyncNow, 
             >
               {t("sync_probe")}
             </button>
+          </div>
+        )}
+
+        {/* ── شريط التقدم التفصيلي — مجموعة بمجموعة ── */}
+        {prog && (
+          <div className="anim-fade-up border-b border-line bg-paper/60 px-5 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-display text-sm font-bold text-ink">{t("sync_progress")}</p>
+              <p className="font-display text-xs font-bold tabular-nums text-pulse-700">
+                {prog.done} / {prog.total}
+              </p>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-paper-deep">
+              <div
+                className="h-full rounded-full bg-gradient-to-l from-pulse-300 to-pulse-600 transition-all duration-500 ease-out"
+                style={{ width: `${(prog.done / prog.total) * 100}%` }}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {prog.items.map((it) => {
+                const done = it.status === "done";
+                const failed = it.status === "failed";
+                const active = busy === "push" && !done && !failed && prog.items.findIndex((x) => !x.status || x.status === "pending") === prog.items.indexOf(it) && prog.done === prog.items.indexOf(it);
+                return (
+                  <span
+                    key={it.name}
+                    title={done ? t("sync_coll_done") : failed ? t("sync_coll_failed") : active ? t("sync_coll_pushing") : t("sync_coll_pending")}
+                    className={
+                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-300 " +
+                      (done
+                        ? "border-moss-600/40 bg-moss-100 text-moss-700"
+                        : failed
+                          ? "border-blood-600/40 bg-blood-100 text-blood-700"
+                          : active
+                            ? "border-pulse-500 bg-pulse-100 text-pulse-700"
+                            : "border-line bg-white text-ink-soft")
+                    }
+                  >
+                    {done ? (
+                      <CheckIcon size={11} />
+                    ) : failed ? (
+                      <XIcon size={11} />
+                    ) : (
+                      <span className={"h-1.5 w-1.5 rounded-full " + (active ? "blink-dot bg-pulse-600" : "bg-line")} />
+                    )}
+                    {t(COLL_LABEL[it.name] ?? it.name)}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
 

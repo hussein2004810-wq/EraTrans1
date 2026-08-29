@@ -4,7 +4,7 @@ import { useI18n } from "../i18n";
 import { CLINICAL_TIPS, SUBJECTS, subjectById } from "../data/seed";
 import { findCollege, findDept, findUniversity } from "../data/hierarchy";
 import EcgLine from "../components/EcgLine";
-import { EmptyState, KiurWordmark, LangSwitch, Modal, SubjectTag, TypeBadge, formatDate } from "../components/ui";
+import { EmptyState, KiurWordmark, LangSwitch, Modal, Reveal, SubjectTag, TypeBadge, formatDate } from "../components/ui";
 import { AttemptReviewModal } from "../exam/ExamResults";
 import {
   AwardIcon, ChartIcon, CheckIcon, ClipboardIcon, ClockIcon, EyeIcon,
@@ -395,17 +395,20 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
 
         {/* ───── لمحة سريرية + السجل ───── */}
         <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-          <aside className="anim-fade-up h-fit rounded-xl border border-pine-700 bg-pine-900 p-5 text-paper" style={{ animationDelay: "0.1s" }}>
-            <p className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-pulse-300/70 uppercase">
-              <StethoIcon size={15} className="text-amberx-500" /> {t("clinical_tips")}
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-pulse-100">
-              {lang === "ar" ? tips[tipIdx % tips.length].ar : tips[tipIdx % tips.length].en}
-            </p>
-            <EcgLine className="mt-4 h-10 w-full text-pulse-300/80" speed={7} />
-          </aside>
+          <Reveal className="h-fit">
+            <aside className="h-fit rounded-xl border border-pine-700 bg-pine-900 p-5 text-paper transition-shadow duration-300 hover:shadow-lg hover:shadow-pine-950/30">
+              <p className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-pulse-300/70 uppercase">
+                <StethoIcon size={15} className="text-amberx-500" /> {t("clinical_tips")}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-pulse-100">
+                {lang === "ar" ? tips[tipIdx % tips.length].ar : tips[tipIdx % tips.length].en}
+              </p>
+              <EcgLine className="mt-4 h-10 w-full text-pulse-300/80" speed={7} />
+            </aside>
+          </Reveal>
 
-          <section className="card anim-fade-up overflow-hidden" style={{ animationDelay: "0.15s" }}>
+          <Reveal delay={80}>
+          <section className="card overflow-hidden">
             <div className="flex items-center gap-2 border-b border-line px-5 py-4">
               <ChartIcon size={19} className="text-pulse-600" />
               <h2 className="font-display text-xl font-bold">{t("my_history")}</h2>
@@ -455,6 +458,7 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
               </div>
             )}
           </section>
+          </Reveal>
         </div>
       </main>
 
