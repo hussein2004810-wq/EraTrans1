@@ -579,6 +579,20 @@ const STR: Record<string, BiText> = {
   toast_imported: { ar: "تم الاستيراد بنجاح ✓", en: "Imported successfully ✓" },
   toast_approved: { ar: "تم قبول الطلب ✓", en: "Request approved ✓" },
   toast_rejected: { ar: "تم رفض الطلب", en: "Request rejected" },
+
+  /* ── أمان الدخول ── */
+  login_locked: { ar: "تم إيقاف الدخول مؤقتًا بعد محاولات متكررة — أعد المحاولة بعد", en: "Sign-in temporarily locked after repeated attempts — try again in" },
+  seconds_word: { ar: "ثانية", en: "sec" },
+  attempts_left: { ar: "محاولات متبقية قبل الإيقاف المؤقت:", en: "attempts left before lockout:" },
+  weak_password: { ar: "كلمة المرور ضعيفة — استخدم 8 أحرف على الأقل مع أرقام أو رموز", en: "Weak password — use at least 8 characters with digits or symbols" },
+  invalid_email: { ar: "صيغة البريد الإلكتروني غير صحيحة", en: "Invalid email format" },
+  pw_strength: { ar: "قوة كلمة المرور", en: "Password strength" },
+  pw_weak: { ar: "ضعيفة", en: "Weak" },
+  pw_fair: { ar: "متوسطة", en: "Fair" },
+  pw_good: { ar: "جيدة", en: "Good" },
+  pw_strong: { ar: "قوية", en: "Strong" },
+  show_pw: { ar: "إظهار كلمة المرور", en: "Show password" },
+  hide_pw: { ar: "إخفاء كلمة المرور", en: "Hide password" },
 };
 
 interface I18nCtx {

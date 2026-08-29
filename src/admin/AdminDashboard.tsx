@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Account, Attempt, AuditEntry, CustomCollege, CustomDept, CustomUniversity, ExamDef, PermKey, Question, SavedSession, ShareRequest, Vignette, VignetteAuditEntry } from "../types";
 import { useI18n } from "../i18n";
 import { useToast } from "../components/Toast";
@@ -142,6 +142,21 @@ export default function AdminDashboard(props: Props) {
   const tabs = allTabs.filter((x) => x.show);
   /* إن فُقدت صلاحية التبويب الحالي ارجع للنظرة العامة */
   const activeTab: Tab = tabs.some((x) => x.id === tab) ? tab : "overview";
+
+  /* اختصارات لوحة المفاتيح: الأرقام 1-9+0 تنقل بين التبويبات المتاحة */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || el?.isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const map = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+      const idx = map.indexOf(e.key);
+      if (idx !== -1 && tabs[idx]) setTab(tabs[idx].id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tabs]);
 
   return (
     <div className="min-h-screen">

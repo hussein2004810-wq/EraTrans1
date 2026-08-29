@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { Account } from "../types";
 import { useI18n } from "../i18n";
 import { allUniversities, collegesOf, findCollege, yearOptions } from "../data/hierarchy";
 import { isCloudAuth } from "../lib/authProvider";
 import EcgLine from "./EcgLine";
 import { KiurWordmark, LangSwitch, SearchableSelect } from "./ui";
-import { ClipboardIcon, GradCapIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon } from "./icons";
+import { ClipboardIcon, EyeIcon, GradCapIcon, KeyIcon, ShieldIcon, StethoIcon, UserIcon, XIcon } from "./icons";
 
 interface AuthProps {
   accounts: Account[];
@@ -44,25 +44,109 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
   };
 
   const [busy, setBusy] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const cloud = isCloudAuth();
+
+  /* ── حماية من التخمين: قفل مؤقت بعد 5 محاولات فاشلة (يصمد عبر إعادة التحميل) ── */
+  const FAILS_KEY = "kiur.login.fails";
+  const MAX_FAILS = 5;
+  const LOCK_MS = 60_000;
+  const [fails, setFails] = useState<{ count: number; lockUntil: number }>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(FAILS_KEY) ?? "") as { count: number; lockUntil: number };
+    } catch {
+      return { count: 0, lockUntil: 0 };
+    }
+  });
+  const [lockLeft, setLockLeft] = useState(0);
+  useEffect(() => {
+    const left = Math.max(0, Math.ceil((fails.lockUntil - Date.now()) / 1000));
+    setLockLeft(left);
+    if (left <= 0) return;
+    const iv = setInterval(() => {
+      const l = Math.max(0, Math.ceil((fails.lockUntil - Date.now()) / 1000));
+      setLockLeft(l);
+      if (l <= 0) {
+        clearInterval(iv);
+        setFails((f) => ({ ...f, lockUntil: 0, count: 0 }));
+      }
+    }, 500);
+    return () => clearInterval(iv);
+  }, [fails.lockUntil]);
+
+  const saveFails = (v: { count: number; lockUntil: number }) => {
+    setFails(v);
+    try {
+      localStorage.setItem(FAILS_KEY, JSON.stringify(v));
+    } catch {
+      /* التخزين غير متاح */
+    }
+  };
+
+  /* ── قوة كلمة المرور: طول + تنوع ── */
+  const pwScore = useMemo(() => {
+    let s = 0;
+    if (password.length >= 8) s++;
+    if (password.length >= 12) s++;
+    if (/[A-Zأ-ي]/.test(password) && /[a-z]/.test(password)) s++;
+    if (/\d/.test(password)) s++;
+    if (/[^A-Za-z0-9\u0600-\u06FF]/.test(password)) s++;
+    return Math.min(4, s);
+  }, [password]);
+  const pwMeta = [
+    { label: t("pw_weak"), cls: "bg-blood-600" },
+    { label: t("pw_weak"), cls: "bg-blood-600" },
+    { label: t("pw_fair"), cls: "bg-amberx-500" },
+    { label: t("pw_good"), cls: "bg-pulse-500" },
+    { label: t("pw_strong"), cls: "bg-moss-600" },
+  ][pwScore];
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setError(null);
+
+    const mail = email.trim().toLowerCase();
+    if (mode === "register" && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) {
+      fail(t("invalid_email"));
+      return;
+    }
+
+    /* قفل التخمين — يُطبَّق قبل أي محاولة */
+    if (fails.lockUntil > Date.now()) {
+      fail(`${t("login_locked")} ${lockLeft} ${t("seconds_word")}`);
+      return;
+    }
+
     setBusy(true);
     try {
       if (mode === "login") {
-        const err = await onLogin(email.trim().toLowerCase(), password);
-        if (err) fail(t(err));
+        const err = await onLogin(mail, password);
+        if (err) {
+          const next = fails.count + 1;
+          if (next >= MAX_FAILS) {
+            saveFails({ count: 0, lockUntil: Date.now() + LOCK_MS });
+            fail(`${t("login_locked")} 60 ${t("seconds_word")}`);
+          } else {
+            saveFails({ count: next, lockUntil: 0 });
+            fail(t(err) + (next >= 3 ? ` — ${t("attempts_left")} ${MAX_FAILS - next}` : ""));
+          }
+        } else {
+          saveFails({ count: 0, lockUntil: 0 });
+        }
       } else {
-        if (!name.trim() || !email.trim() || password.length < 4 || !university || !college) {
+        if (!name.trim() || !mail || password.length < 4 || !university || !college) {
           fail(t("required_fields"));
+          return;
+        }
+        /* في الوضع السحابي تشترط كلمة مرور قوية (8+ أحرف وتنوع) */
+        if (cloud && (password.length < 8 || pwScore < 2)) {
+          fail(t("weak_password"));
           return;
         }
         const err = await onRegister({
           name: name.trim(),
-          email: email.trim().toLowerCase(),
+          email: mail,
           password,
           role: "student",
           university,
@@ -87,9 +171,15 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
           <p className="mt-3 max-w-md text-lg leading-relaxed text-pulse-300/90">{t("tagline")}</p>
 
           <div className="mt-10 grid max-w-md grid-cols-3 gap-3">
-            <Vital label={t("questions_n")} value={stats.questions} />
-            <Vital label={t("exams_n")} value={stats.exams} />
-            <Vital label={t("students_n")} value={stats.students} />
+            <div className="anim-fade-up" style={{ animationDelay: "0.15s" }}>
+              <Vital label={t("questions_n")} value={stats.questions} />
+            </div>
+            <div className="anim-fade-up" style={{ animationDelay: "0.25s" }}>
+              <Vital label={t("exams_n")} value={stats.exams} />
+            </div>
+            <div className="anim-fade-up" style={{ animationDelay: "0.35s" }}>
+              <Vital label={t("students_n")} value={stats.students} />
+            </div>
           </div>
 
           <div className="mt-10 max-w-md rounded-xl border border-pine-700 bg-pine-800/60 p-4">
@@ -105,7 +195,8 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
         </div>
 
         <div className="relative z-10">
-          <EcgLine className="h-24 w-full text-pulse-300" speed={5} />
+          {/* تخطيط القلب يتسارع أثناء معالجة الدخول — نبض المنصة يستجيب */}
+          <EcgLine className="h-24 w-full text-pulse-300" speed={busy ? 1.4 : 5} />
           <div className="monitor-band border-t border-pine-700/60 px-10 py-4 text-xs text-pulse-300/60">
             KIUR © {new Date().getFullYear()} — {t("tagline")}
           </div>
@@ -178,14 +269,43 @@ export default function Auth({ accounts, stats, onLogin, onRegister }: AuthProps
                 <div className="relative">
                   <ShieldIcon size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-soft/60" />
                   <input
-                    className="input ps-9"
+                    className="input pe-10 ps-9"
                     dir="ltr"
-                    type="password"
+                    type={showPw ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-ink-soft/70 transition-colors hover:text-pulse-700"
+                    title={showPw ? t("hide_pw") : t("show_pw")}
+                    aria-label={showPw ? t("hide_pw") : t("show_pw")}
+                  >
+                    {showPw ? <XIcon size={15} /> : <EyeIcon size={15} />}
+                  </button>
                 </div>
+
+                {/* مقياس قوة كلمة المرور عند التسجيل */}
+                {mode === "register" && password.length > 0 && (
+                  <div className="anim-fade-up mt-2">
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <span
+                          key={i}
+                          className={
+                            "h-1.5 flex-1 rounded-full transition-colors duration-300 " +
+                            (i < pwScore ? pwMeta.cls : "bg-line")
+                          }
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[11px] font-semibold text-ink-soft">
+                      {t("pw_strength")}: <span className="text-ink">{pwMeta.label}</span>
+                    </p>
+                  </div>
+                )}
               </div>
 
               {mode === "register" && (

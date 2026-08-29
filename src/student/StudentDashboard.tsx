@@ -269,10 +269,9 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                 const n = effectiveCount(exam, questions);
                 const disabled = n === 0;
                 return (
+                  <Reveal key={exam.id} delay={(i % 3) * 80} className="h-full">
                   <article
-                    key={exam.id}
-                    className="card anim-fade-up group flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                    style={{ animationDelay: `${i * 0.07}s` }}
+                    className="card group flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${SUBJECTS[i % SUBJECTS.length].color}, #0E7C66)` }} />
                     <div className="flex flex-1 flex-col p-5">
@@ -353,6 +352,7 @@ export default function StudentDashboard({ user, exams, questions, attempts, ses
                       </div>
                     </div>
                   </article>
+                  </Reveal>
                 );
               })}
             </div>
